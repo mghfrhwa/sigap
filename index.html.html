@@ -1,0 +1,2822 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SI Getah — Dashboard KPH Kediri</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --green-900:#0f3d24;
+  --green-800:#14532d;
+  --green-700:#1b6b3c;
+  --green-600:#237a45;
+  --green-100:#e6f4ea;
+  --green-50:#f3faf5;
+  --gold:#f0ad4e;
+  --gold-bg:#fff4e0;
+  --red:#e5484d;
+  --red-bg:#fdecec;
+  --blue:#2f80ed;
+  --blue-bg:#e8f0fe;
+  --ink:#1e2b23;
+  --sub:#6b7d72;
+  --line:#e4ece6;
+  --card:#ffffff;
+  --bg:#f4f8f5;
+  --radius:14px;
+  font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-size:14px;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ===== Layout ===== */
+.app{display:flex;min-height:100vh;}
+.sidebar{
+  width:250px;flex:0 0 250px;
+  background:linear-gradient(180deg,var(--green-800) 0%,var(--green-900) 100%);
+  color:#fff;display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sidebar-header{
+  background:#fff;margin:14px;border-radius:12px;padding:14px;
+  display:flex;align-items:center;gap:10px;
+}
+.logo-mark{width:38px;height:38px;flex:none;}
+.sidebar-header .brand-title{font-weight:800;color:var(--green-800);font-size:14px;line-height:1.2;}
+.sidebar-header .brand-sub{font-size:11px;color:var(--green-600);font-weight:600;}
+
+.menu-label{font-size:11px;letter-spacing:.08em;color:#9fc9ac;padding:10px 22px 6px;font-weight:700;}
+.nav{list-style:none;padding:0 12px;flex:1;}
+.nav li{margin-bottom:3px;}
+.nav button{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;border:none;color:#d9ecdf;
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;
+  text-align:left;transition:.15s;
+}
+.nav button .ico{width:18px;text-align:center;font-size:15px;}
+.nav button:hover{background:rgba(255,255,255,.08);color:#fff;}
+.nav button.active{background:#fff;color:var(--green-800);font-weight:700;box-shadow:0 4px 10px rgba(0,0,0,.15);}
+
+.sidebar-footer{padding:16px 22px;font-size:11px;color:#8fb99b;border-top:1px solid rgba(255,255,255,.08);margin-top:auto;}
+.sidebar-footer .foot-brand{font-weight:700;color:#cfe9d6;font-size:12px;margin-bottom:2px;}
+
+/* ===== Main ===== */
+.main{flex:1;min-width:0;}
+.topbar{
+  background:#fff;border-bottom:1px solid var(--line);
+  padding:16px 28px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:20;
+}
+.topbar h1{font-size:21px;font-weight:800;color:var(--green-900);}
+.topbar .sub{font-size:12.5px;color:var(--sub);margin-top:2px;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.icon-btn{position:relative;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--green-800);}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block;}
+.nav button .ico svg.i{width:17px;height:17px;}
+.icn svg.i{width:19px;height:19px;}
+.qi svg.i{width:18px;height:18px;}
+.badge-dot{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
+.user-chip{display:flex;align-items:center;gap:8px;}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--green-100);color:var(--green-800);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+.user-chip .name{font-size:13px;font-weight:700;}
+.user-chip .role{font-size:11px;color:var(--sub);}
+.period-pill{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:600;color:var(--green-800);background:#fff;}
+
+.content{padding:24px 28px 60px;}
+.page{display:none;animation:fade .25s ease;}
+.page.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ===== Role preview switcher ===== */
+.role-switch{
+  position:sticky;top:0;z-index:300;height:44px;
+  background:var(--green-900);color:#cfe9d6;
+  display:flex;align-items:center;gap:10px;padding:0 20px;font-size:12.5px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.rs-label{font-weight:600;color:#9fc9ac;}
+.role-btn{
+  display:flex;align-items:center;gap:6px;background:transparent;border:1px solid rgba(255,255,255,.18);
+  color:#d9ecdf;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;
+}
+.role-btn svg.i{width:14px;height:14px;}
+.role-btn:hover{background:rgba(255,255,255,.08);}
+.role-btn.active{background:#fff;color:var(--green-800);border-color:#fff;}
+
+.sidebar{top:44px!important;height:calc(100vh - 44px)!important;}
+.topbar{top:44px!important;}
+@media (max-width:1000px){
+  .role-switch{font-size:11px;padding:0 12px;gap:6px;}
+  .rs-label{display:none;}
+}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+.grid{display:grid;gap:18px;}
+.kpi-row{grid-template-columns:repeat(5,1fr);}
+.kpi{display:flex;flex-direction:column;gap:8px;}
+.kpi .top{display:flex;align-items:center;gap:10px;}
+.kpi .icn{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;}
+.kpi .label{font-size:12px;color:var(--sub);font-weight:600;}
+.kpi .value{font-size:22px;font-weight:800;color:var(--ink);}
+.kpi .value .pct{font-size:12px;color:var(--sub);font-weight:600;}
+.kpi .delta{font-size:11.5px;font-weight:700;}
+.kpi .delta.up{color:var(--green-700);}
+.kpi .delta.down{color:var(--red);}
+.bg-green{background:var(--green-100);color:var(--green-700);}
+.bg-blue{background:var(--blue-bg);color:var(--blue);}
+.bg-gold{background:var(--gold-bg);color:#b9790a;}
+.bg-red{background:var(--red-bg);color:var(--red);}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-head h3{font-size:15.5px;font-weight:800;color:var(--green-900);}
+.link-btn{font-size:12.5px;font-weight:700;color:var(--green-700);background:var(--green-50);border:1px solid var(--green-100);padding:6px 12px;border-radius:8px;display:flex;align-items:center;gap:4px;}
+.link-btn:hover{background:var(--green-100);}
+
+.donut-row{display:flex;align-items:center;gap:22px;}
+.donut-wrap{position:relative;width:150px;height:150px;flex:none;}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.donut-center .num{font-size:20px;font-weight:800;}
+.donut-center .lbl{font-size:11px;color:var(--sub);}
+.legend{flex:1;display:flex;flex-direction:column;gap:10px;}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:12.5px;}
+.legend-row .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+.legend-row .name{flex:1;color:var(--sub);}
+.legend-row .n{font-weight:700;width:52px;text-align:right;}
+.legend-row .p{font-weight:700;width:46px;text-align:right;color:var(--sub);}
+.legend-total{display:flex;justify-content:space-between;padding-top:8px;border-top:1px dashed var(--line);font-weight:800;font-size:12.5px;}
+
+/* ===== Swipeable per-tanggal composition (Produksi Getah) ===== */
+.pie-scroll{display:flex;gap:22px;overflow-x:auto;padding:6px 4px 16px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+.pie-scroll::-webkit-scrollbar{height:6px;}
+.pie-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px;}
+.pie-slide{flex:0 0 auto;width:148px;text-align:center;scroll-snap-align:start;}
+.pie-slide .donut-wrap{width:126px;height:126px;margin:0 auto;}
+.pie-slide .donut-center .num{font-size:15px;}
+.pie-slide .pie-date{font-weight:800;font-size:13px;color:var(--green-900);margin-top:10px;}
+
+.bkph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;padding:6px 4px 4px;}
+.bkph-scroll{display:flex;gap:16px;overflow-x:auto;padding:6px 4px 16px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+.bkph-scroll::-webkit-scrollbar{height:6px;}
+.bkph-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px;}
+.bkph-scroll .bkph-card{flex:0 0 auto;width:210px;scroll-snap-align:start;}
+.bkph-card{background:var(--green-50);border:1.5px solid var(--green-100);border-radius:12px;padding:14px;text-align:center;transition:border-color .3s,box-shadow .3s;}
+.bkph-card.bkph-card-highlight{border-color:var(--green-600);box-shadow:0 0 0 3px rgba(35,122,69,.15);}
+.bkph-card .bkph-name{font-weight:800;font-size:13px;color:var(--green-900);margin-bottom:8px;}
+.bkph-card .donut-wrap{width:118px;height:118px;margin:0 auto;}
+.bkph-card .donut-wrap .num{font-size:14px;}
+.bkph-card .bkph-ket{margin-top:10px;text-align:left;font-size:11.5px;display:flex;flex-direction:column;gap:4px;}
+.bkph-card .bkph-ket .kr{display:flex;align-items:center;gap:6px;}
+.bkph-card .bkph-ket .kr .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+.bkph-card .bkph-ket .kr .kl{flex:1;color:var(--sub);}
+.bkph-card .bkph-ket .kr .kv{font-weight:700;}
+.bkph-card .bkph-input{margin-top:8px;font-size:11px;color:var(--sub);}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{background:var(--green-50);color:var(--green-800);font-weight:700;padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--ink);}
+tr:last-child td{border-bottom:none;}
+tr.total-row td{background:var(--green-50);font-weight:800;}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge.green{background:var(--green-100);color:var(--green-700);}
+.badge.gold{background:var(--gold-bg);color:#b9790a;}
+.badge.red{background:var(--red-bg);color:var(--red);}
+.badge.blue{background:var(--blue-bg);color:var(--blue);}
+.badge.gray{background:#eef1ee;color:#667;}
+
+.activity-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
+.activity-item:last-child{border-bottom:none;}
+.activity-item .icn{width:34px;height:34px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.activity-item .body{flex:1;min-width:0;}
+.activity-item .who{font-weight:700;font-size:12.5px;}
+.activity-item .what{font-size:12px;color:var(--sub);}
+.activity-item .time{font-size:10.5px;color:#9aa89e;margin-top:2px;}
+
+.map-box{border-radius:12px;overflow:hidden;border:1px solid var(--line);position:relative;height:260px;background:linear-gradient(135deg,#eaf5ee,#dcefe1);}
+.map-region{position:absolute;border-radius:10px;background:rgba(35,122,69,.18);border:1.5px solid var(--green-600);cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4px;}
+.map-region:hover,.map-region.sel{background:rgba(35,122,69,.4);}
+.map-region .rn{font-size:11px;font-weight:800;color:var(--green-900);}
+.map-region .rp{font-size:10.5px;color:var(--green-700);}
+
+.btn{border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--green-700);color:#fff;}
+.btn-primary:hover{background:var(--green-800);}
+.btn-outline{background:#fff;border:1px solid var(--line);color:var(--ink);}
+.btn-outline:hover{background:var(--green-50);}
+.btn-outline.active{background:var(--green-700);border-color:var(--green-700);color:#fff;}
+.btn-ghost{background:var(--green-50);color:var(--green-800);border:1px solid var(--green-100);}
+.btn-danger-outline{background:#fff;border:1px solid var(--red-bg);color:var(--red);}
+
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.quick-item{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border-radius:12px;background:var(--green-50);border:1px solid var(--green-100);font-size:11.5px;font-weight:700;color:var(--green-800);}
+.quick-item:hover{background:var(--green-100);}
+.quick-item .qi{width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;}
+
+/* ===== Input form ===== */
+.info-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:16px 18px;margin-bottom:20px;}
+.info-bar .f{display:flex;flex-direction:column;gap:4px;}
+.info-bar .f label{font-size:11px;color:var(--sub);font-weight:600;}
+.info-bar .f select,.info-bar .f input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--ink);}
+
+.step-title{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.step-num{width:24px;height:24px;border-radius:7px;background:var(--green-700);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.step-title h4{font-size:14.5px;font-weight:800;color:var(--green-900);}
+.step-hint{font-size:12px;color:var(--sub);margin:4px 0 14px 34px;}
+
+.form-cols{display:grid;grid-template-columns:repeat(3,1fr) 170px;gap:14px;}
+.opt-box{border:1.5px solid var(--line);border-radius:12px;padding:14px;}
+.opt-box .oh{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.opt-box .dot{width:9px;height:9px;border-radius:50%;}
+.opt-box .otitle{font-weight:700;font-size:13px;}
+.opt-box .osub{font-size:11px;color:var(--sub);margin-bottom:10px;}
+.opt-box input[type=number]{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:15px;font-weight:700;}
+.opt-box .pct{font-size:11px;color:var(--sub);margin-top:6px;display:flex;justify-content:space-between;}
+.form-cols-2{display:grid;grid-template-columns:repeat(2,1fr) 170px;gap:14px;}
+.slider-row{display:flex;align-items:center;gap:10px;margin:8px 0 2px;}
+.slider-row input[type=range]{flex:1;height:6px;-webkit-appearance:none;appearance:none;background:var(--line);border-radius:4px;outline:none;}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;border:2.5px solid var(--green-700);box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer;}
+.slider-row input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:#fff;border:2.5px solid var(--green-700);box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer;}
+.slider-row input[type=range]:disabled{opacity:.35;cursor:not-allowed;}
+.slider-row input[type=range]:disabled::-webkit-slider-thumb{cursor:not-allowed;}
+.slider-row input[type=range]:disabled::-moz-range-thumb{cursor:not-allowed;}
+.slider-val{font-size:14.5px;font-weight:800;min-width:42px;text-align:right;color:var(--ink);}
+.opt-box.locked{background:var(--bg);opacity:.6;}
+.opt-box.locked .otitle,.opt-box.locked .osub{color:var(--sub);}
+.total-box{background:var(--green-50);border:1.5px solid var(--green-100);border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.total-box .tv{font-size:24px;font-weight:800;color:var(--green-800);}
+.total-box .tl{font-size:11px;color:var(--sub);}
+.total-box .tp{font-size:12px;font-weight:700;color:var(--green-700);margin-top:4px;}
+
+.radio-cards{display:grid;grid-template-columns:1fr 1fr 170px;gap:14px;}
+.rcard{border:1.5px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;transition:.15s;}
+.rcard.sel{border-color:var(--green-600);background:var(--green-50);}
+.rcard .rt{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;margin-bottom:4px;}
+.rcard .rt .radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:none;position:relative;}
+.rcard.sel .rt .radio{border-color:var(--green-700);}
+.rcard.sel .rt .radio::after{content:'';position:absolute;inset:2px;border-radius:50%;background:var(--green-700);}
+.rcard .rd{font-size:11.5px;color:var(--sub);}
+
+textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:12.5px;resize:vertical;min-height:70px;}
+.field-label{font-size:12.5px;font-weight:700;margin-bottom:8px;display:block;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;}
+.form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+
+.side-panel{display:flex;flex-direction:column;gap:16px;}
+.mini-map{height:120px;border-radius:10px;background:linear-gradient(135deg,#eaf5ee,#dcefe1);position:relative;overflow:hidden;margin-bottom:12px;}
+.mini-map .pin{position:absolute;top:38%;left:46%;color:var(--green-700);}
+.mini-map .pin svg.i{width:26px;height:26px;stroke-width:2.2;}
+/* ===== Peta Sebaran ===== */
+.map-wrap{
+  position:relative;width:100%;height:360px;border-radius:var(--radius);
+  border:1px solid var(--line);overflow:hidden;
+  background:
+    radial-gradient(circle at 18% 25%, rgba(35,122,69,.10), transparent 55%),
+    radial-gradient(circle at 75% 70%, rgba(35,122,69,.09), transparent 55%),
+    linear-gradient(135deg,#eef6f0 0%,#e3f0e6 100%);
+}
+.map-zone{position:absolute;background:rgba(35,122,69,.06);border:1px dashed rgba(20,83,45,.25);border-radius:16px;}
+.map-zone .zone-label{position:absolute;top:6px;left:10px;font-size:10.5px;font-weight:700;color:var(--green-700);opacity:.8;letter-spacing:.02em;}
+.map-pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;display:flex;flex-direction:column;align-items:center;z-index:5;}
+.map-pin .pin-dot{width:16px;height:16px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+.map-pin .pin-label{margin-top:5px;font-size:10.5px;font-weight:700;background:#fff;padding:2px 8px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.14);color:var(--ink);white-space:nowrap;}
+.map-pin:hover .pin-dot{filter:brightness(1.12);}
+.map-pin.active .pin-label{background:var(--green-800);color:#fff;}
+.map-legend{display:flex;gap:14px;font-size:12px;color:var(--sub);flex-wrap:wrap;}
+.map-legend .lg-item{display:flex;align-items:center;gap:5px;}
+.map-legend .lg-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+.kv{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px dashed var(--line);}
+.kv:last-child{border-bottom:none;}
+.kv .k{color:var(--sub);}
+.kv .v{font-weight:700;}
+.checklist-item{display:flex;gap:8px;font-size:12px;color:var(--sub);padding:5px 0;align-items:flex-start;}
+.checklist-item .c{color:var(--green-600);}
+
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px;}
+.tab{padding:10px 16px;font-size:13px;font-weight:700;color:var(--sub);border-bottom:2px solid transparent;cursor:pointer;}
+.tab.active{color:var(--green-800);border-color:var(--green-700);}
+
+.filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.filter-row select,.filter-row input{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;}
+
+.toggle{width:42px;height:24px;border-radius:20px;background:#d8e0da;position:relative;cursor:pointer;flex:none;transition:.2s;}
+.toggle.on{background:var(--green-600);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.toggle.on::after{left:21px;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line);}
+.settings-row:last-child{border-bottom:none;}
+.settings-row .st{font-weight:700;font-size:13px;}
+.settings-row .sd{font-size:11.5px;color:var(--sub);margin-top:2px;}
+
+.faq{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.faq-q{padding:14px 16px;font-weight:700;font-size:13px;display:flex;justify-content:space-between;cursor:pointer;background:#fff;}
+.faq-a{padding:0 16px;max-height:0;overflow:hidden;transition:.2s;font-size:12.5px;color:var(--sub);}
+.faq.open .faq-a{padding:0 16px 14px;max-height:200px;}
+.faq.open .faq-q .chev{transform:rotate(180deg);}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;color:var(--sub);text-align:center;}
+.empty .ei{font-size:34px;margin-bottom:10px;}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green-800);color:#fff;padding:14px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;z-index:999;transform:translateY(120%);transition:.3s;}
+.toast.show{transform:translateY(0);}
+
+.chart-card{height:300px;}
+.mobile-only{display:none;}
+.hamburger{display:none;}
+
+@media (max-width:1000px){
+  .kpi-row{grid-template-columns:repeat(2,1fr);}
+  .grid.two{grid-template-columns:1fr!important;}
+  .form-cols,.radio-cards{grid-template-columns:1fr;}
+  .info-bar{grid-template-columns:repeat(2,1fr);}
+  .quick-grid{grid-template-columns:repeat(2,1fr);}
+  .sidebar{position:fixed;left:-260px;z-index:100;transition:.25s;box-shadow:0 0 40px rgba(0,0,0,.3);}
+  .sidebar.open{left:0;}
+  .hamburger{display:flex;}
+  .topbar-right .period-pill{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="role-switch">
+  <span class="rs-label">Pratinjau sebagai:</span>
+  <button class="role-btn" data-role="mandor" onclick="setRole('mandor')"><span data-icon="edit"></span> Mandor / TAD</button>
+  <button class="role-btn" data-role="krph" onclick="setRole('krph')"><span data-icon="clipboard"></span> KRPH</button>
+  <button class="role-btn" data-role="asper" onclick="setRole('asper')"><span data-icon="chart"></span> Asper / KBKPH</button>
+  <button class="role-btn active" data-role="admin" onclick="setRole('admin')"><span data-icon="users"></span> Admin KPH</button>
+  <button class="role-btn" data-role="produksi" onclick="setRole('produksi')"><span data-icon="droplet"></span> Admin Produksi Getah</button>
+  <button class="role-btn" data-role="masteradmin" onclick="setRole('masteradmin')"><span data-icon="db"></span> Admin</button>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header role-admin-only">
+      <svg class="logo-mark" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#0f3d24"/><path d="M24 8c5 5 9 9 9 15a9 9 0 1 1-18 0c0-6 4-10 9-15z" fill="#5fbf7a"/><rect x="22" y="26" width="4" height="14" rx="1.5" fill="#8a5a2b"/></svg>
+      <div>
+        <div class="brand-title" id="orgBrandTitle">Perhutani</div>
+        <div class="brand-sub" id="orgBrandSub">KPH KEDIRI</div>
+      </div>
+    </div>
+
+    <div class="sidebar-header role-mandor-only" style="display:none;">
+      <div class="avatar" style="width:42px;height:42px;font-size:14px;background:var(--green-100);">BS</div>
+      <div>
+        <div class="brand-title">Budi Santoso</div>
+        <div class="brand-sub" style="display:flex;align-items:center;gap:5px;">Mandor Sadap
+          <span style="display:inline-flex;align-items:center;gap:3px;color:#2e9e52;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:#2e9e52;display:inline-block;"></span>Online</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-label">MENU UTAMA</div>
+    <ul class="nav" id="navList">
+      <li data-roles="admin,krph,asper,mandor"><button data-page="dashboard" class="active"><span class="ico" data-icon="home"></span> Dashboard</button></li>
+      <li data-roles="mandor"><button data-page="draft"><span class="ico" data-icon="file"></span> Draft Tersimpan</button></li>
+      <li data-roles="mandor"><button data-page="riwayat"><span class="ico" data-icon="clock"></span> Riwayat Input</button></li>
+      <li data-roles="admin"><button data-page="laporan"><span class="ico" data-icon="receipt"></span> Laporan</button></li>
+      <li data-roles="produksi"><button data-page="produksi-dashboard"><span class="ico" data-icon="chart"></span> Dashboard</button></li>
+      <li data-roles="produksi"><button data-page="produksi-input"><span class="ico" data-icon="edit"></span> Input Produksi</button></li>
+      <li data-roles="produksi"><button data-page="produksi-laporan"><span class="ico" data-icon="receipt"></span> Laporan</button></li>
+      <li data-roles="masteradmin"><button data-page="master"><span class="ico" data-icon="db"></span> Master Data</button></li>
+      <li data-roles="admin,krph,asper,mandor,masteradmin,produksi"><button data-page="pengaturan"><span class="ico" data-icon="gear"></span> Setting</button></li>
+      <li data-roles="admin,krph,asper,mandor,masteradmin,produksi"><button data-page="bantuan"><span class="ico" data-icon="help"></span> Bantuan</button></li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="foot-brand" style="display:flex;align-items:center;gap:6px;"><span data-icon="leaf"></span>Perhutani</div>
+      Hutan Lestari, Hidup Sejahtera<br>© 2025 Perum Perhutani KPH Kediri
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="hamburger icon-btn" id="hamburger" data-icon="menu"></div>
+        <button class="icon-btn" id="backBtn" style="display:none;" onclick="goBack()" title="Kembali"><span data-icon="arrow-left"></span></button>
+        <div>
+          <h1 id="pageTitle">Dashboard KPH Kediri</h1>
+          <div class="sub" id="pageSub">Sistem Informasi Getah dan Aktivitas Penyadapan</div>
+        </div>
+      </div>
+      <div class="topbar-right role-admin-only" id="topbarAdmin">
+        <div class="period-pill"><span data-icon="clock" style="display:inline-flex;vertical-align:-3px;margin-right:2px;"></span>Periode: Mei 2025</div>
+        <div class="icon-btn" style="position:relative;"><span data-icon="bell"></span><span class="badge-dot">3</span></div>
+        <div class="user-chip">
+          <div class="avatar" id="orgAvatar">AK</div>
+          <div>
+            <div class="name" id="orgUserName">Admin KPH</div>
+            <div class="role" id="orgUserRole">KPH Kediri</div>
+          </div>
+        </div>
+      </div>
+      <div class="topbar-right role-mandor-only" id="topbarMandor" style="display:none;">
+        <div class="icon-btn" style="position:relative;"><span data-icon="bell"></span><span class="badge-dot">3</span></div>
+        <button class="btn btn-outline" style="padding:8px 14px;" onclick="setRole('admin')"><span data-icon="x"></span> Keluar</button>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+      <!-- ============ DASHBOARD ============ -->
+      <div class="page active" id="page-dashboard">
+        <div class="section-head" id="dashScopeHead" style="display:none;margin-bottom:10px;">
+          <div style="font-size:12.5px;color:var(--sub);background:var(--green-50);border:1px solid var(--green-100);padding:8px 14px;border-radius:10px;display:inline-flex;align-items:center;gap:6px;">
+            <span data-icon="clipboard" style="display:inline-flex;"></span>Menampilkan data untuk wilayah <b style="color:var(--green-800);" id="dashScopeName">RPH Sambiroto</b> saja
+          </div>
+        </div>
+        <div class="grid kpi-row" style="margin-bottom:18px;">
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-green" data-icon="leaf"></div><div class="label">Total Petak</div></div>
+            <div class="value"><span id="kpiTotalPetak">152</span> <span class="pct">Petak</span></div>
+            <div class="delta up" id="kpiTotalPetakDelta">↑ 5 petak dari Apr 2025</div>
+          </div>
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-blue" data-icon="clipboard"></div><div class="label">Total Quare Aktif</div></div>
+            <div class="value"><span id="kpiAktif">24.583</span> <span class="pct" id="kpiAktifPct">(72,45%)</span></div>
+            <div class="delta up" id="kpiAktifDelta">↑ 3,21% dari Apr 2025</div>
+          </div>
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-gold" data-icon="clock"></div><div class="label">Quare Telat</div></div>
+            <div class="value"><span id="kpiTelat">6.214</span> <span class="pct" id="kpiTelatPct">(18,32%)</span></div>
+            <div class="delta down" id="kpiTelatDelta">↓ 1,12% dari Apr 2025</div>
+          </div>
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-red" data-icon="x"></div><div class="label">Quare Tidak Aktif / Bongkor</div></div>
+            <div class="value"><span id="kpiBongkor">3.186</span> <span class="pct" id="kpiBongkorPct">(9,23%)</span></div>
+            <div class="delta down" id="kpiBongkorDelta">↓ 2,09% dari Apr 2025</div>
+          </div>
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-green" data-icon="droplet"></div><div class="label">Estimasi Produksi Bulan Ini</div></div>
+            <div class="value"><span id="kpiProduksi">98.450</span> <span class="pct">Kg</span></div>
+            <div class="delta up" id="kpiProduksiDelta">↑ 6.320 Kg dari Apr 2025</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;" id="kphGetahPieCard">
+          <div class="section-head">
+            <h3>Komposisi Produksi Getah, Angkutan &amp; Sisa</h3>
+          </div>
+          <div class="sub" id="kphGetahScopeLabel" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Data dari input Admin Produksi Getah &middot; Seluruh KPH Kediri</div>
+          <div style="display:flex;gap:14px;margin-bottom:4px;font-size:11.5px;font-weight:700;">
+            <span style="color:#2f80ed;">&#9679; Produksi</span>
+            <span style="color:#e5484d;">&#9679; Angkutan</span>
+            <span style="color:#1b6b3c;">&#9679; Sisa</span>
+          </div>
+          <div class="bkph-scroll" id="kphPdPieScroll"></div>
+        </div>
+
+        <div class="grid" id="dashRow2" style="grid-template-columns:1fr 1fr;margin-bottom:18px;" class="two">
+          <div class="card">
+            <div class="section-head"><h3>Pembaharuan Quare</h3></div>
+            <div class="sub" id="scopeQuare" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Seluruh KPH Kediri</div>
+            <div class="donut-row">
+              <div class="donut-wrap"><canvas id="donutQuare"></canvas>
+                <div class="donut-center"><div class="num" id="donutQuareTotal">33.983</div><div class="lbl">Total Quare</div></div>
+              </div>
+              <div class="legend" id="legendQuare">
+                <div class="legend-row"><span class="dot" style="background:#237a45"></span><span class="name">Aktif</span><span class="n">24.583</span><span class="p">72,45%</span></div>
+                <div class="legend-row"><span class="dot" style="background:#f0ad4e"></span><span class="name">Telat</span><span class="n">6.214</span><span class="p">18,32%</span></div>
+                <div class="legend-row"><span class="dot" style="background:#e5484d"></span><span class="name">Tidak Aktif/Bongkor</span><span class="n">3.186</span><span class="p">9,23%</span></div>
+                <div class="legend-total"><span>Total</span><span>33.983 · 100%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head"><h3>Progres Naik Talang & Tempurung</h3></div>
+            <div class="sub" id="scopeTalang" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Seluruh KPH Kediri</div>
+            <div class="donut-row">
+              <div class="donut-wrap"><canvas id="donutTalang"></canvas>
+                <div class="donut-center"><div class="num" id="donutTalangTotal">33.983</div><div class="lbl">Total Petak</div></div>
+              </div>
+              <div class="legend" id="legendTalang">
+                <div class="legend-row"><span class="dot" style="background:#237a45"></span><span class="name">Sudah Dilaksanakan</span><span class="n">26.845</span><span class="p">79,05%</span></div>
+                <div class="legend-row"><span class="dot" style="background:#f0ad4e"></span><span class="name">Belum Dilaksanakan</span><span class="n">7.138</span><span class="p">20,95%</span></div>
+                <div class="legend-total"><span>Total</span><span>33.983 · 100%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1.4fr;margin-bottom:18px;" class="two">
+          <div class="card">
+            <div class="section-head"><h3>Estimasi Produksi dalam Petak</h3><button class="link-btn nav-restricted" onclick="goto('laporan')">Detail →</button></div>
+            <div class="sub" id="scopeProduksi" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Seluruh KPH Kediri</div>
+            <div class="donut-row">
+              <div class="donut-wrap"><canvas id="donutProduksi"></canvas>
+                <div class="donut-center"><div class="num" id="donutProduksiTotal">152</div><div class="lbl">Total Petak</div></div>
+              </div>
+              <div class="legend" id="legendProduksi">
+                <div class="legend-row"><span class="dot" style="background:#237a45"></span><span class="name">Sudah Menghasilkan</span><span class="n">98</span><span class="p">64,47%</span></div>
+                <div class="legend-row"><span class="dot" style="background:#f0ad4e"></span><span class="name">Belum Menghasilkan</span><span class="n">54</span><span class="p">35,53%</span></div>
+                <div class="legend-total"><span>Total</span><span>152 · 100%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h3>Trend Estimasi Produksi (Kg)</h3>
+              <select style="border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;">
+                <option>6 Bulan Terakhir</option><option>12 Bulan Terakhir</option>
+              </select>
+            </div>
+            <div class="sub" id="scopeTrend" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Seluruh KPH Kediri</div>
+            <div class="chart-card"><canvas id="trendChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid" id="dashRekapRow" style="grid-template-columns:1fr;" class="two">
+          <div class="card" id="rekapPreviewCard">
+            <div class="section-head"><h3 id="rekapPreviewTitle">Rekap Per RPH</h3></div>
+            <div class="sub" id="scopeRekapPreview" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Seluruh KPH Kediri</div>
+            <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>No</th><th>RPH</th><th>Wilayah BKPH</th><th>Aktif</th><th>Telat</th><th>Bongkor</th><th>Talang Sudah</th><th>Talang Belum</th><th>Produksi (Kg)</th></tr></thead>
+              <tbody id="rekapRphBody"></tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" id="dashCharts" style="grid-template-columns:1fr 1fr;margin-top:18px;" class="two">
+          <div class="card" id="rphChartCard">
+            <div class="section-head"><h3 id="rphChartTitle">Progres & Produksi per RPH</h3></div>
+            <div class="chart-card"><canvas id="rphChart"></canvas></div>
+          </div>
+          <div class="card" id="mandorChartCard">
+            <div class="section-head"><h3 id="mandorChartTitle">Input per Mandor / TAD</h3></div>
+            <div class="chart-card"><canvas id="mandorChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid" id="dashBkphSection" style="grid-template-columns:1fr;margin-top:18px;" class="two">
+          <div class="card" id="bkphChartCard">
+            <div class="section-head"><h3>Capaian Produksi per BKPH</h3></div>
+            <div class="chart-card" style="height:260px;"><canvas id="bkphChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px;" id="mandorTableCard">
+
+          <div class="section-head"><h3 id="mandorTableTitle">Rekap Seluruh Data yang Diinput per Mandor / TAD</h3></div>
+          <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Mandor / TAD</th><th>RPH</th><th>Quare Aktif</th><th>Quare Telat</th><th>Quare Bongkor</th><th>Progres Talang</th><th>Estimasi Produksi (Kg)</th><th>Tanggal Input</th><th>Status</th></tr></thead>
+            <tbody id="mandorBody"></tbody>
+          </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ INPUT DATA ============ -->
+      <div class="page" id="page-input">
+        <div class="card info-bar">
+          <div class="f"><label>Tanggal Input</label><input type="date" value="2025-05-20"></div>
+          <div class="f"><label>RPH</label>
+            <select id="inpRPH"><option>RPH Sumberjo</option><option>RPH Sleman</option><option>RPH Krecek</option><option>RPH Bulu</option><option>RPH Jegu</option></select>
+          </div>
+          <div class="f"><label>BKPH</label><select><option>BKPH Sumberjo</option><option>BKPH Kediri</option><option>BKPH Pare</option></select></div>
+          <div class="f"><label>Petak / Sub Petak</label><input value="458 / A"></div>
+          <div class="f"><label>Luas Petak</label><input value="25,30 Ha" readonly></div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 320px;align-items:start;">
+          <div>
+            <div class="card" style="margin-bottom:18px;">
+              <div class="step-title"><div class="step-num">1</div><h4>Pembaharuan Quare</h4></div>
+              <div class="step-hint">Input jumlah quare berdasarkan status pembaharuan</div>
+              <div class="form-cols">
+                <div class="opt-box">
+                  <div class="oh"><span class="dot" style="background:#237a45"></span><span class="otitle">Quare Aktif</span></div>
+                  <div class="osub">Quare masih layak sadap</div>
+                  <input type="number" id="qAktif" value="850" oninput="calcQuare()">
+                  <div class="pct"><span>% dari Total</span><span id="pAktif">72,45%</span></div>
+                </div>
+                <div class="opt-box">
+                  <div class="oh"><span class="dot" style="background:#f0ad4e"></span><span class="otitle">Quare Telat</span></div>
+                  <div class="osub">Belum dibaharui sesuai periode</div>
+                  <input type="number" id="qTelat" value="210" oninput="calcQuare()">
+                  <div class="pct"><span>% dari Total</span><span id="pTelat">17,92%</span></div>
+                </div>
+                <div class="opt-box">
+                  <div class="oh"><span class="dot" style="background:#e5484d"></span><span class="otitle">Quare Tidak Aktif/Bongkor</span></div>
+                  <div class="osub">Quare rusak / tidak dapat disadap</div>
+                  <input type="number" id="qBongkor" value="110" oninput="calcQuare()">
+                  <div class="pct"><span>% dari Total</span><span id="pBongkor">9,63%</span></div>
+                </div>
+                <div class="total-box">
+                  <div class="tv" id="qTotal">1.170</div>
+                  <div class="tl">Total Quare</div>
+                  <div class="tp">100%</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom:18px;">
+              <div class="step-title"><div class="step-num">2</div><h4>Progres Naik Talang & Tempurung</h4></div>
+              <div class="step-hint">Pilih status yang ingin diatur — status yang tidak dipilih otomatis terkunci mengikuti sisa persentase</div>
+              <div class="form-cols-2">
+                <div class="opt-box" id="tSudahBox">
+                  <div class="oh">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                      <input type="radio" name="talangMode" id="talangModeSudah" checked onchange="setTalangMode('sudah')">
+                      <span class="dot" style="background:#237a45"></span><span class="otitle">Sudah Terpasang</span>
+                    </label>
+                  </div>
+                  <div class="osub">Quare aktif yang sudah terpasang talang & tempurung</div>
+                  <div class="slider-row">
+                    <input type="range" id="tSudahPct" min="0" max="100" step="1" value="100" oninput="setTalangPct('sudah', this.value)" style="accent-color:#237a45;">
+                    <span class="slider-val" id="tSudahPctLabel">100%</span>
+                  </div>
+                  <div class="pct"><span>Jumlah Quare</span><span id="tSudahCount">850</span></div>
+                </div>
+                <div class="opt-box" id="tBelumBox">
+                  <div class="oh">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                      <input type="radio" name="talangMode" id="talangModeBelum" onchange="setTalangMode('belum')">
+                      <span class="dot" style="background:#f0ad4e"></span><span class="otitle">Belum Terpasang</span>
+                    </label>
+                  </div>
+                  <div class="osub">Quare aktif yang belum terpasang talang & tempurung</div>
+                  <div class="slider-row">
+                    <input type="range" id="tBelumPct" min="0" max="100" step="1" value="0" oninput="setTalangPct('belum', this.value)" style="accent-color:#f0ad4e;" disabled>
+                    <span class="slider-val" id="tBelumPctLabel">0%</span>
+                  </div>
+                  <div class="pct"><span>Jumlah Quare</span><span id="tBelumCount">0</span></div>
+                </div>
+                <div class="total-box">
+                  <div class="tv" id="tTotal">100%</div>
+                  <div class="tl">Progres Total</div>
+                  <div class="tp">(Dari quare aktif)</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="step-title"><div class="step-num">3</div><h4>Estimasi Produksi dalam Petak</h4></div>
+              <div class="step-hint">Input estimasi produksi getah dalam Kg pada petak ini — total dihitung otomatis</div>
+              <div class="form-cols">
+                <div class="opt-box">
+                  <div class="oh"><span class="dot" style="background:#237a45"></span><span class="otitle">Produksi Baik</span></div>
+                  <div class="osub">Estimasi produksi getah dengan hasil optimal (Kg)</div>
+                  <input type="number" id="prBaik" value="9950" oninput="calcProduksi()">
+                  <div class="pct"><span>% dari Total Produksi</span><span id="pBaik">79,92%</span></div>
+                </div>
+                <div class="opt-box">
+                  <div class="oh"><span class="dot" style="background:#f0ad4e"></span><span class="otitle">Produksi Rendah</span></div>
+                  <div class="osub">Estimasi produksi getah di bawah normal (Kg)</div>
+                  <input type="number" id="prRendah" value="2500" oninput="calcProduksi()">
+                  <div class="pct"><span>% dari Total Produksi</span><span id="pRendah">20,08%</span></div>
+                </div>
+                <div class="opt-box">
+                  <div class="oh"><span class="dot" style="background:#e5484d"></span><span class="otitle">Tidak Berproduksi</span></div>
+                  <div class="osub">Estimasi kehilangan produksi getah (Kg)</div>
+                  <input type="number" id="prTidak" value="0" oninput="calcProduksi()">
+                  <div class="pct"><span>% dari Total Produksi</span><span id="pTidak">0,00%</span></div>
+                </div>
+                <div class="total-box">
+                  <div class="tv" style="font-size:20px;" id="prTotalKg">12.450 Kg</div>
+                  <div class="tl">Total Estimasi Produksi</div>
+                  <div class="tp">Estimasi 1 Bulan</div>
+                </div>
+              </div>
+              <div class="two-col" style="grid-template-columns:1fr;">
+                <div>
+                  <label class="field-label">Catatan (Opsional)</label>
+                  <textarea placeholder="Tambahkan catatan jika diperlukan..." maxlength="200"></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-outline" onclick="saveDraft()"><span data-icon="file"></span> Simpan Draft</button>
+                <button class="btn btn-outline" onclick="resetForm()"><span data-icon="refresh"></span> Bersihkan</button>
+                <button class="btn btn-primary" onclick="submitForm()"><span data-icon="send"></span> Simpan & Kirim</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="side-panel">
+            <div class="card">
+              <div class="section-head"><h3 style="font-size:13.5px;">Ringkasan Petak</h3></div>
+              <div class="mini-map"><div class="pin" data-icon="pin"></div></div>
+              <div class="kv"><span class="k">Petak / Sub Petak</span><span class="v">458 / A</span></div>
+              <div class="kv"><span class="k">Luas Petak</span><span class="v">25,30 Ha</span></div>
+              <div class="kv"><span class="k">Jumlah Pohon</span><span class="v">1.450 Pohon</span></div>
+              <div class="kv"><span class="k">Tanggal Sadap</span><span class="v">19 Mei 2025</span></div>
+              <div class="kv"><span class="k">Mandor</span><span class="v">Budi Santoso</span></div>
+            </div>
+            <div class="card">
+              <div class="section-head"><h3 style="font-size:13.5px;">Panduan Pengisian</h3></div>
+              <div class="checklist-item"><span class="c" data-icon="check"></span>Pastikan jumlah quare sesuai dengan kondisi di lapangan</div>
+              <div class="checklist-item"><span class="c" data-icon="check"></span>Progres talang & tempurung dihitung dari quare aktif</div>
+              <div class="checklist-item"><span class="c" data-icon="check"></span>Estimasi produksi berdasarkan pengamatan getah per pohon</div>
+              <div class="checklist-item"><span class="c" data-icon="check"></span>Simpan data secara berkala agar tidak hilang</div>
+            </div>
+            <div class="card">
+              <div class="section-head"><h3 style="font-size:13.5px;">Status Data</h3></div>
+              <div class="kv"><span class="k">Status</span><span class="badge gold">Belum Terkirim</span></div>
+              <div class="kv"><span class="k">Dibuat</span><span class="v">20 Mei 2025 09:10</span></div>
+              <div class="kv"><span class="k">Diubah</span><span class="v">-</span></div>
+              <div class="kv"><span class="k">Versi</span><span class="v">1.0</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ DRAFT TERSIMPAN ============ -->
+      <div class="page" id="page-draft">
+        <div class="card">
+          <div class="section-head" style="margin-bottom:2px;">
+            <div style="font-size:12px;color:var(--sub);">Menampilkan draft milik <b style="color:var(--ink);" id="draftOwnerName">Budi Santoso</b> — <span id="draftOwnerRph">RPH Sumberjo</span></div>
+          </div>
+          <div class="filter-row" style="margin-top:12px;">
+            <input id="draftSearchInput" placeholder="Cari petak..." style="flex:1;min-width:200px;" onkeydown="if(event.key==='Enter')renderDrafts()">
+            <button class="btn btn-outline" onclick="renderDrafts()"><span data-icon="search"></span> Cari</button>
+            <button class="btn btn-primary" onclick="goto('input')">+ Draft Baru</button>
+          </div>
+          <table>
+            <thead><tr><th>Petak</th><th>RPH</th><th>Quare Total</th><th>Estimasi Produksi</th><th>Terakhir Diubah</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="draftBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ RIWAYAT INPUT ============ -->
+      <div class="page" id="page-riwayat">
+        <div class="card">
+          <div class="section-head" style="margin-bottom:2px;">
+            <div style="font-size:12px;color:var(--sub);">Menampilkan riwayat input milik <b style="color:var(--ink);" id="riwayatOwnerName">Budi Santoso</b> sendiri — <span id="riwayatOwnerRph">RPH Sumberjo</span></div>
+          </div>
+          <div class="filter-row" style="margin-top:12px;">
+            <select id="riwayatStatusFilter" onchange="renderRiwayat()"><option value="semua">Semua Status</option><option value="blue">Terkirim</option><option value="green">Lengkap</option><option value="red">Tidak Lengkap</option></select>
+            <input type="date" value="2025-05-01"> <span style="align-self:center;color:var(--sub);">s/d</span> <input type="date" value="2025-05-20">
+            <button class="btn btn-outline"><span data-icon="download"></span> Export</button>
+          </div>
+          <table>
+            <thead><tr><th>Tanggal</th><th>Mandor / TAD</th><th>Petak</th><th>Quare Aktif</th><th>Produksi (Kg)</th><th>Status</th><th>Validasi Sistem</th></tr></thead>
+            <tbody id="riwayatBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ LAPORAN ============ -->
+      <div class="page" id="page-laporan">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="section-head"><h3>Buat Laporan</h3></div>
+          <div class="filter-row">
+            <select id="laporanJenis"><option value="produksi">Jenis: Rekap Produksi</option><option value="quare">Jenis: Rekap Quare</option><option value="talang">Jenis: Progres Talang</option><option value="verifikasi">Jenis: Kelengkapan Data</option></select>
+            <input type="date" id="laporanTanggal" value="2025-05-20">
+            <input type="month" id="laporanPeriode" value="2025-05">
+            <select id="laporanLevel"></select>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:6px;">
+            <button class="btn btn-primary" onclick="exportLaporanExcel()"><span data-icon="download"></span> Export Excel</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;">
+          <div class="section-head">
+            <h3>Detail Progres per Petak</h3>
+            <button class="btn btn-outline" onclick="exportPetakDetailExcel()"><span data-icon="download"></span> Export Excel</button>
+          </div>
+          <div class="sub" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Acuan utama laporan KPH — setiap baris merepresentasikan progres 1 petak, mencakup 3 progres (Quare, Talang & Tempurung, Produksi) dan estimasi produksi lengkap</div>
+          <div id="laporanPetakSummary" style="font-size:12.5px;color:var(--sub);background:var(--green-50);border:1px solid var(--green-100);border-radius:10px;padding:12px 14px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><h3>Riwayat Laporan</h3></div>
+          <table>
+            <thead><tr><th>Nama Laporan</th><th>Periode</th><th>Dibuat</th><th>Format</th><th>Aksi</th></tr></thead>
+            <tbody id="laporanBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ ADMIN PRODUKSI GETAH: DASHBOARD ============ -->
+      <div class="page" id="page-produksi-dashboard">
+        <div class="grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;" class="kpi-row">
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-green" data-icon="leaf"></div><div class="label">Total Produksi</div></div>
+            <div class="value"><span id="pdKpiProduksi">0</span> <span class="pct">Kg</span></div>
+          </div>
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-blue" data-icon="send"></div><div class="label">Total Angkutan</div></div>
+            <div class="value"><span id="pdKpiAngkutan">0</span> <span class="pct">Kg</span></div>
+          </div>
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-gold" data-icon="droplet"></div><div class="label">Sisa Persediaan</div></div>
+            <div class="value"><span id="pdKpiSisa">0</span> <span class="pct">Kg</span></div>
+          </div>
+          <div class="card kpi">
+            <div class="top"><div class="icn bg-red" data-icon="clipboard"></div><div class="label">Mandor/TAD Sudah Input</div></div>
+            <div class="value"><span id="pdKpiInput">0/0</span></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;">
+          <div class="section-head">
+            <h3>Komposisi Produksi, Angkutan &amp; Sisa</h3>
+          </div>
+          <div class="sub" id="pdScopeLabel" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Seluruh KPH Kediri &middot; Periode berjalan</div>
+          <div style="display:flex;gap:14px;margin-bottom:14px;font-size:11.5px;font-weight:700;">
+            <span style="color:#2f80ed;">&#9679; Produksi</span>
+            <span style="color:#e5484d;">&#9679; Angkutan</span>
+            <span style="color:#1b6b3c;">&#9679; Sisa</span>
+          </div>
+          <div class="bkph-scroll" id="pdPieScroll"></div>
+        </div>
+        <div class="card">
+          <div class="section-head"><h3>Rekap Produksi per RPH</h3></div>
+          <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>No</th><th>RPH</th><th>BKPH</th><th>Produksi (Kg)</th><th>Angkutan (Kg)</th><th>Sisa (Kg)</th><th>Mandor/TAD Input</th></tr></thead>
+            <tbody id="pdRekapRphBody"></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ ADMIN PRODUKSI GETAH: DETAIL KOMPOSISI PER BKPH ============ -->
+      <div class="page" id="page-produksi-bkph">
+        <div class="card">
+          <div class="section-head">
+            <h3>Detail Komposisi per BKPH</h3>
+            <span class="sub" id="pbTanggalLabel" style="font-size:12px;color:var(--sub);font-weight:700;"></span>
+          </div>
+          <div class="sub" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Rincian produksi, angkutan &amp; sisa tiap BKPH untuk tanggal yang dipilih dari Dashboard.</div>
+          <div style="display:flex;gap:14px;margin-bottom:14px;font-size:11.5px;font-weight:700;">
+            <span style="color:#2f80ed;">&#9679; Produksi (Kg)</span>
+            <span style="color:#e5484d;">&#9679; Angkutan (Kg)</span>
+            <span style="color:#1b6b3c;">&#9679; Sisa (Kg)</span>
+          </div>
+          <div class="bkph-grid" id="pbScroll"></div>
+        </div>
+      </div>
+
+      <!-- ============ ADMIN PRODUKSI GETAH: INPUT PRODUKSI ============ -->
+      <div class="page" id="page-produksi-input">
+        <div class="card">
+          <div class="section-head">
+            <h3>Input Produksi &amp; Angkutan Harian per Mandor / TAD</h3>
+          </div>
+          <div class="filter-row">
+            <select id="piBkphFilter" onchange="onPiBkphChange()"></select>
+            <select id="piRphFilter" onchange="renderInputProduksiTable()"></select>
+            <input placeholder="Cari nama mandor/TAD..." id="piSearch" oninput="renderInputProduksiTable()" style="flex:1;min-width:180px;">
+            <button class="btn btn-primary" onclick="pgSimpanSemua()"><span data-icon="check"></span> Simpan Semua</button>
+          </div>
+          <div id="piBody"></div>
+        </div>
+      </div>
+
+      <!-- ============ ADMIN PRODUKSI GETAH: LAPORAN ============ -->
+      <div class="page" id="page-produksi-laporan">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="section-head">
+            <h3>Laporan Input Harian per Periode</h3>
+            <div style="display:flex;gap:10px;">
+              <input type="month" id="plBulanFilter" onchange="renderLaporanProduksi()">
+              <button class="btn btn-outline" onclick="exportProduksiExcel()"><span data-icon="download"></span> Export Excel</button>
+            </div>
+          </div>
+          <div class="sub" style="font-size:11.5px;color:var(--sub);margin:-6px 0 14px;">Setiap bulan dibagi 2 periode: <b>Periode 1 (tanggal 1–15)</b> dan <b>Periode 2 (tanggal 16–akhir bulan)</b>.</div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;" class="two">
+            <div class="card" id="plPeriode1Card" style="border:1.5px solid var(--green-100);"></div>
+            <div class="card" id="plPeriode2Card" style="border:1.5px solid var(--green-100);"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;">
+          <div class="section-head">
+            <h3 id="plRiwayatTitle">Riwayat Input Harian</h3>
+            <div class="tabs" style="border-bottom:none;margin-bottom:0;">
+              <div class="tab active" id="plTabP1" onclick="pgSetPeriodeView(1)">Periode 1</div>
+              <div class="tab" id="plTabP2" onclick="pgSetPeriodeView(2)">Periode 2</div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Tanggal</th><th>Jumlah Mandor/TAD Input</th><th>Produksi (Kg)</th><th>Angkutan (Kg)</th><th>Sisa (Kg)</th></tr></thead>
+            <tbody id="plRiwayatBody"></tbody>
+          </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><h3>Arsip / Backup Periode</h3></div>
+          <div class="sub" style="font-size:11.5px;color:var(--sub);margin:-8px 0 10px;">Setiap pergantian periode (tanggal 1 dan 16), riwayat periode yang berjalan otomatis dipindahkan ke arsip di bawah ini dan riwayat periode baru dimulai dari nol. Admin Produksi Getah dapat menghapus arsip lama sesuai kebijakan retensi data.</div>
+          <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Periode</th><th>Diarsipkan</th><th>Produksi (Kg)</th><th>Angkutan (Kg)</th><th>Sisa (Kg)</th><th>Aksi</th></tr></thead>
+            <tbody id="plArsipBody"></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ MASTER DATA ============ -->
+      <div class="page" id="page-master">
+        <div class="card">
+          <div class="tabs">
+            <div class="tab active" data-tab="petak" onclick="switchTab(this)">Data Petak</div>
+            <div class="tab" data-tab="rph" onclick="switchTab(this)">Data RPH</div>
+            <div class="tab" data-tab="bkph" onclick="switchTab(this)">Data BKPH</div>
+            <div class="tab" data-tab="pengguna" onclick="switchTab(this)">Data Pengguna</div>
+          </div>
+          <div id="tab-petak" class="tab-panel">
+            <div class="filter-row"><input placeholder="Cari petak..." style="flex:1"><button class="btn btn-primary" onclick="addRow('petak')"><span data-icon="plus"></span> Tambah Petak</button></div>
+            <table><thead><tr><th>Kode Petak</th><th>RPH</th><th>Luas (Ha)</th><th>Jumlah Pohon</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="masterPetakBody"></tbody></table>
+          </div>
+          <div id="tab-rph" class="tab-panel" style="display:none;">
+            <div class="filter-row"><input placeholder="Cari RPH..." style="flex:1"><button class="btn btn-primary" onclick="addRow('rph')"><span data-icon="plus"></span> Tambah RPH</button></div>
+            <table><thead><tr><th>Nama RPH</th><th>BKPH</th><th>Jumlah Petak</th><th>KRPH Bertugas</th><th>Aksi</th></tr></thead><tbody id="masterRphBody"></tbody></table>
+          </div>
+          <div id="tab-bkph" class="tab-panel" style="display:none;">
+            <div class="filter-row"><input placeholder="Cari BKPH..." style="flex:1"><button class="btn btn-primary" onclick="addRow('bkph')"><span data-icon="plus"></span> Tambah BKPH</button></div>
+            <table><thead><tr><th>Nama BKPH</th><th>Jumlah RPH</th><th>Jumlah Petak</th><th>Asper/KBKPH</th><th>Aksi</th></tr></thead><tbody id="masterBkphBody"></tbody></table>
+          </div>
+          <div id="tab-pengguna" class="tab-panel" style="display:none;">
+            <div class="filter-row"><input placeholder="Cari pengguna..." style="flex:1"><button class="btn btn-primary" onclick="addRow('pengguna')"><span data-icon="plus"></span> Tambah Pengguna</button></div>
+            <table><thead><tr><th>Nama</th><th>Peran</th><th>Wilayah Tugas</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="masterPenggunaBody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PENGATURAN ============ -->
+      <div class="page" id="page-pengaturan">
+        <div class="grid" style="grid-template-columns:1fr 1fr;" class="two">
+          <div class="card" id="settingsProfilCard">
+            <div class="section-head"><h3>Profil</h3></div>
+            <div class="settings-row"><div><div class="st">Nama</div><div class="sd" id="setProfilNama">Admin KPH Kediri</div></div><button class="btn btn-outline">Edit</button></div>
+            <div class="settings-row"><div><div class="st">Email</div><div class="sd" id="setProfilEmail">admin.kediri@perhutani.co.id</div></div><button class="btn btn-outline">Edit</button></div>
+            <div class="settings-row"><div><div class="st">Kata Sandi</div><div class="sd">Terakhir diganti 3 bulan lalu</div></div><button class="btn btn-outline">Ubah</button></div>
+          </div>
+          <div class="card" id="settingsPreferensiCard">
+            <div class="section-head"><h3>Preferensi</h3></div>
+            <div class="settings-row"><div><div class="st">Notifikasi Aplikasi</div><div class="sd">Terima notifikasi input & validasi sistem</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="settings-row"><div><div class="st">Notifikasi Email</div><div class="sd">Ringkasan harian ke email</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            <div class="settings-row"><div><div class="st">Mode Gelap</div><div class="sd">Tampilan gelap untuk penggunaan malam</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ BANTUAN ============ -->
+      <div class="page" id="page-bantuan">
+        <div class="card" style="max-width:760px;">
+          <div class="section-head"><h3>Pertanyaan Umum</h3></div>
+          <div id="faqList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- ICONS (clean line icons, replaces emoji) ---------- */
+const ICONS = {
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  file:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',
+  clipboard:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6"/><path d="M9 15h6"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M7 15v3"/><path d="M12 10v8"/><path d="M17 6v12"/>',
+  receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6"/><path d="M9 12h6"/>',
+  pin:'<path d="M12 21s7-6.4 7-12a7 7 0 1 0-14 0c0 5.6 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
+  db:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 1 1 4.8 2.4c-.9.7-1.9 1.2-1.9 2.6"/><path d="M12 17.5h.01"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 21a2 2 0 0 0 4 0"/>',
+  menu:'<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
+  leaf:'<path d="M12 3c6 0 10 4 10 9-6 0-9-2-10-4 0 5-3 9-9 9 0-9 4-14 9-14Z"/>',
+  droplet:'<path d="M12 3s7 7.5 7 12.5a7 7 0 1 1-14 0C5 10.5 12 3 12 3Z"/>',
+  x:'<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/>',
+  download:'<path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/>',
+  plus:'<path d="M12 5v14"/><path d="M5 12h14"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  map:'<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2Z"/><path d="M9 4v14"/><path d="M15 6v14"/>',
+  layers:'<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15 14.2c2.4.4 4.3 2.5 4.5 5.3"/>',
+  send:'<path d="m3 12 18-9-6 18-4-7-8-2Z"/>',
+  spray:'<path d="M9 5v16"/><path d="M6 21h6"/><path d="M6 9h6"/><path d="M6 13h6"/><path d="M13 3h6"/><path d="M13 7h4"/><path d="M13 11h5"/>',
+  "arrow-left":'<path d="M19 12H5"/><path d="m11 18-6-6 6-6"/>',
+  pie:'<path d="M21.2 15.3A10 10 0 1 1 12 2v10.2Z"/><path d="M22 12A10 10 0 0 0 12 2v10Z"/>',
+};
+function icon(name, size){
+  const s = size||18;
+  return `<svg class="i" viewBox="0 0 24 24" width="${s}" height="${s}">${ICONS[name]||''}</svg>`;
+}
+function renderStaticIcons(){
+  document.querySelectorAll('[data-icon]').forEach(el=>{
+    el.innerHTML = icon(el.getAttribute('data-icon'));
+  });
+}
+
+/* ---------- NAV ---------- */
+const titles = {
+  dashboard:['Dashboard KPH Kediri','Sistem Informasi Getah dan Aktivitas Penyadapan'],
+  input:['Input Data Aktivitas Penyadapan','Beranda > Input Data'],
+  draft:['Draft Tersimpan','Data yang belum dikirim ke server'],
+  riwayat:['Riwayat Input','Riwayat data yang pernah diinput'],
+  laporan:['Laporan','Buat dan unduh laporan capaian'],
+  'produksi-dashboard':['Dashboard Produksi Getah','Ringkasan input harian persediaan getah — seluruh KPH Kediri'],
+  'produksi-input':['Input Produksi Getah','Input produksi & angkutan harian per mandor / TAD'],
+  'produksi-bkph':['Detail Komposisi per BKPH','Rincian produksi, angkutan & sisa per BKPH untuk tanggal terpilih'],
+  'produksi-laporan':['Laporan Produksi Getah','Rekap 2 periode per bulan (1–15 dan 16–akhir bulan) beserta arsip'],
+  master:['Master Data','Kelola data referensi petak, RPH, BKPH, dan pengguna'],
+  pengaturan:['Setting','Kelola profil dan preferensi akun'],
+  bantuan:['Bantuan','Panduan penggunaan sistem'],
+};
+let navHistory = [];
+let currentPageKey = 'dashboard';
+function goto(page, opts){
+  const skipHistory = !!(opts && opts.skipHistory);
+  if(!skipHistory && page !== currentPageKey){
+    navHistory.push(currentPageKey);
+  }
+  currentPageKey = page;
+
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+
+  // Chart.js butuh canvas yang sudah terlihat (bukan display:none) supaya bisa menghitung ukurannya dengan benar,
+  // jadi diagram per-BKPH baru dibangun di sini, setelah halaman dipastikan aktif/terlihat.
+  if(page==='produksi-bkph' && typeof renderPdBkphDetail==='function') renderPdBkphDetail();
+
+  let title = titles[page][0], sub = titles[page][1];
+  if(page==='dashboard' && currentRole==='krph'){
+    // Nama & wilayah KRPH menyesuaikan akun yang sedang login (roleMeta.krph)
+    const meta = roleMeta.krph;
+    title = 'Dashboard ' + meta.name;              // mis. "Dashboard KRPH Sumberjo"
+    sub = 'Rekap Input Mandor / TAD — ' + meta.role;
+  }
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('pageSub').textContent = sub;
+
+  const backBtn = document.getElementById('backBtn');
+  if(backBtn) backBtn.style.display = navHistory.length ? 'inline-flex' : 'none';
+
+  document.getElementById('sidebar').classList.remove('open');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goBack(){
+  if(!navHistory.length) return;
+  const prev = navHistory.pop();
+  goto(prev, {skipHistory:true});
+}
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>goto(b.dataset.page)));
+document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+/* ---------- ROLE SWITCH (Mandor/TAD, KRPH, Asper/KBKPH, Admin KPH) ---------- */
+let currentRole = 'admin';
+const roleMeta = {
+  mandor:{ page:'input',      toast:'Beralih ke tampilan Mandor / TAD',
+           name:'Budi Santoso', rph:'RPH Sumberjo' },
+  krph:  { page:'dashboard',  toast:'Beralih ke tampilan KRPH',
+           avatar:'KR', name:'KRPH Sambiroto', role:'RPH Sambiroto' },
+  asper: { page:'dashboard', toast:'Beralih ke tampilan Asper / KBKPH',
+           avatar:'AP', name:'Asper Kediri',   role:'BKPH Kediri' },
+  admin: { page:'dashboard',  toast:'Beralih ke tampilan Admin KPH',
+           avatar:'AK', name:'Admin KPH',    role:'KPH Kediri' },
+  produksi: { page:'produksi-dashboard', toast:'Beralih ke tampilan Admin Produksi Getah',
+           avatar:'PG', name:'Admin Produksi Getah', role:'KPH Kediri' },
+  masteradmin: { page:'master', toast:'Beralih ke tampilan Admin (Master Data)',
+           avatar:'AD', name:'Admin',        role:'Master Data' },
+};
+function setRole(role){
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active', b.dataset.role===role));
+
+  // header/topbar: mandor gets its own personal header, others share the org header/topbar
+  document.querySelectorAll('.role-admin-only').forEach(el=>el.style.display = role!=='mandor' ? '' : 'none');
+  document.querySelectorAll('.role-mandor-only').forEach(el=>el.style.display = role==='mandor' ? '' : 'none');
+
+  // nav items: show only the menus relevant to this role
+  document.querySelectorAll('#navList > li[data-roles]').forEach(li=>{
+    const roles = li.dataset.roles.split(',');
+    li.style.display = roles.includes(role) ? '' : 'none';
+  });
+
+  const meta = roleMeta[role];
+  if(role!=='mandor'){
+    document.getElementById('orgAvatar').textContent = meta.avatar;
+    document.getElementById('orgUserName').textContent = meta.name;
+    document.getElementById('orgUserRole').textContent = meta.role;
+    document.getElementById('orgBrandTitle').textContent = role==='admin' ? 'Perhutani' : meta.name;
+    document.getElementById('orgBrandSub').textContent = role==='admin' ? 'KPH KEDIRI' : meta.role.toUpperCase();
+  }
+
+  // Dashboard: KRPH hanya melihat diagram+tabel Mandor/TAD di RPH-nya sendiri;
+  // Asper/BKPH hanya melihat diagram per-RPH (level KRPH) tanpa rincian per Mandor/TAD;
+  // KPH (Admin) hanya monitoring di level BKPH — rincian per RPH/Mandor tidak ditampilkan di Dashboard,
+  // cukup diakses lewat halaman Rekapitulasi BKPH bila diperlukan.
+  const isKrph = role==='krph';
+  const isAsper = role==='asper';
+  const isAdmin = role==='admin';
+  const isMandor = role==='mandor';
+
+  // Asper/KBKPH hanya punya akses menu Dashboard; Mandor/TAD tidak punya menu Rekapitulasi BKPH/Laporan —
+  // sembunyikan tautan cepat menuju halaman tersebut dari Dashboard supaya tidak mengarah ke menu yang tidak tersedia
+  document.querySelectorAll('.nav-restricted').forEach(el=>{
+    el.style.display = (isAdmin || isKrph) ? '' : 'none';
+  });
+
+  const rphChartCard = document.getElementById('rphChartCard');
+  const mandorChartCard = document.getElementById('mandorChartCard');
+  const mandorTableCard = document.getElementById('mandorTableCard');
+  const rekapPreviewCard = document.getElementById('rekapPreviewCard');
+  const dashRekapRow = document.getElementById('dashRekapRow');
+  const dashCharts = document.getElementById('dashCharts');
+  const dashBkphSection = document.getElementById('dashBkphSection');
+  const bkphChartCard = document.getElementById('bkphChartCard');
+
+  if(rphChartCard) rphChartCard.style.display = (isKrph || isAdmin) ? 'none' : '';
+  if(mandorChartCard) mandorChartCard.style.display = (isAsper || isAdmin) ? 'none' : '';
+  if(mandorTableCard) mandorTableCard.style.display = (isAsper || isAdmin) ? 'none' : '';
+  if(rekapPreviewCard) rekapPreviewCard.style.display = '';
+  if(dashCharts) dashCharts.style.display = isAdmin ? 'none' : '';
+  if(dashCharts) dashCharts.style.gridTemplateColumns = (isKrph || isAsper) ? '1fr' : '1fr 1fr';
+  // Capaian per BKPH relevan untuk Asper/KBKPH, Mandor, dan KPH (Admin)
+  if(dashBkphSection) dashBkphSection.style.display = (isAdmin || isAsper || isMandor) ? '' : 'none';
+  if(bkphChartCard) bkphChartCard.style.display = '';
+  const kphGetahPieCard = document.getElementById('kphGetahPieCard');
+  if(kphGetahPieCard) kphGetahPieCard.style.display = isAdmin ? '' : 'none';
+
+  const mandorChartTitle = document.getElementById('mandorChartTitle');
+  const mandorTableTitle = document.getElementById('mandorTableTitle');
+  const rphChartTitle = document.getElementById('rphChartTitle');
+  if(mandorChartTitle) mandorChartTitle.textContent = isKrph ? ('Rekap Input Mandor / TAD — '+meta.role) : 'Input per Mandor / TAD';
+  if(mandorTableTitle) mandorTableTitle.textContent = isKrph ? ('Rekap Data Mandor / TAD — '+meta.role) : 'Rekap Seluruh Data yang Diinput per Mandor / TAD';
+  if(rphChartTitle) rphChartTitle.textContent = isAsper ? ('Progres & Produksi per RPH — '+meta.role) : 'Progres & Produksi per RPH';
+
+  // Setting: KRPH & Asper/KBKPH hanya melihat Preferensi; Mandor & Admin melihat Profil + Preferensi
+  const settingsProfilCard = document.getElementById('settingsProfilCard');
+  if(settingsProfilCard) settingsProfilCard.style.display = (isKrph || isAsper) ? 'none' : '';
+  const setProfilNama = document.getElementById('setProfilNama');
+  const setProfilEmail = document.getElementById('setProfilEmail');
+  if(setProfilNama && meta) setProfilNama.textContent = meta.name;
+  if(setProfilEmail && meta) setProfilEmail.textContent = meta.name.toLowerCase().replace(/\s+/g,'.')+'@perhutani.co.id';
+
+  renderMandor(role);
+  renderRphChart(role);
+  renderDashboardBkph(role);
+  renderRekapPage(role);
+  renderPetaSebaran(role);
+  renderLaporanLevelOptions(role);
+  updateDashboardScope(role);
+
+  navHistory = [];
+  goto(meta.page, {skipHistory:true});
+  toast(meta.toast);
+}
+
+/* ---------- TOAST ---------- */
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ---------- DATA ---------- */
+const rphData = [
+  {no:1,rph:'Bandung',bkph:'BKPH Bandung',total:25,aktif:7942,telat:1425,bongkor:767,sudah:7447,belum:2687,produksi:37131,target:50525,menghasilkan:18,belumMenghasilkan:7,status:'red',label:'Tidak Lengkap'},
+  {no:2,rph:'Besuki',bkph:'BKPH Bandung',total:6,aktif:13699,telat:1129,bongkor:608,sudah:15127,belum:309,produksi:58443,target:48610,menghasilkan:6,belumMenghasilkan:0,status:'green',label:'Lengkap'},
+  {no:3,rph:'Watulimo',bkph:'BKPH Bandung',total:12,aktif:6647,telat:1437,bongkor:774,sudah:5328,belum:3530,produksi:30593,target:50865,menghasilkan:7,belumMenghasilkan:5,status:'red',label:'Tidak Lengkap'},
+  {no:1,rph:'Banjar',bkph:'BKPH Dongko',total:21,aktif:11771,telat:1458,bongkor:786,sudah:13449,belum:566,produksi:33587,target:35000,menghasilkan:20,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:2,rph:'Dongko Selatan',bkph:'BKPH Dongko',total:45,aktif:74209,telat:6114,bongkor:3293,sudah:81944,belum:1672,produksi:265138,target:205000,menghasilkan:44,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:3,rph:'Dongko Utara',bkph:'BKPH Dongko',total:57,aktif:151544,telat:17601,bongkor:9478,sudah:175051,belum:3572,produksi:496804,target:500000,menghasilkan:56,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:4,rph:'Panggul',bkph:'BKPH Dongko',total:59,aktif:69346,telat:9250,bongkor:4980,sudah:76801,belum:6775,produksi:222383,target:242000,menghasilkan:54,belumMenghasilkan:5,status:'gold',label:'Belum Lengkap'},
+  {no:5,rph:'Sumberbening',bkph:'BKPH Dongko',total:86,aktif:279428,telat:37759,bongkor:20332,sudah:307666,belum:29853,produksi:754764,target:828000,menghasilkan:78,belumMenghasilkan:8,status:'gold',label:'Belum Lengkap'},
+  {no:1,rph:'Kampak Selatan',bkph:'BKPH Kampak',total:57,aktif:193725,telat:15962,bongkor:8595,sudah:213916,belum:4366,produksi:652203,target:561034,menghasilkan:56,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:2,rph:'Kampak Utara',bkph:'BKPH Kampak',total:106,aktif:244615,telat:29493,bongkor:15880,sudah:282488,belum:7500,produksi:896700,target:920507,menghasilkan:103,belumMenghasilkan:3,status:'green',label:'Lengkap'},
+  {no:3,rph:'Munjungan Barat',bkph:'BKPH Kampak',total:2,aktif:5058,telat:595,bongkor:320,sudah:5854,belum:119,produksi:17008,target:17231,menghasilkan:2,belumMenghasilkan:0,status:'green',label:'Lengkap'},
+  {no:4,rph:'Munjungan Timur',bkph:'BKPH Kampak',total:3,aktif:739,telat:83,bongkor:44,sudah:849,belum:17,produksi:1242,target:1228,menghasilkan:3,belumMenghasilkan:0,status:'green',label:'Lengkap'},
+  {no:1,rph:'Gandusari',bkph:'BKPH Karangan',total:44,aktif:76424,telat:8809,bongkor:4744,sudah:88177,belum:1800,produksi:164088,target:164500,menghasilkan:43,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:2,rph:'Karangan',bkph:'BKPH Karangan',total:114,aktif:147914,telat:17958,bongkor:9670,sudah:170354,belum:5188,produksi:394000,target:406000,menghasilkan:111,belumMenghasilkan:3,status:'green',label:'Lengkap'},
+  {no:3,rph:'Pule',bkph:'BKPH Karangan',total:159,aktif:221265,telat:21039,bongkor:11329,sudah:248560,belum:5073,produksi:726169,target:666500,menghasilkan:156,belumMenghasilkan:3,status:'green',label:'Lengkap'},
+  {no:4,rph:'Tugu',bkph:'BKPH Karangan',total:96,aktif:77837,telat:12214,bongkor:6576,sudah:79442,belum:17185,produksi:281996,target:343000,menghasilkan:79,belumMenghasilkan:17,status:'gold',label:'Belum Lengkap'},
+  {no:1,rph:'Kalipang',bkph:'BKPH Kediri',total:33,aktif:17955,telat:3095,bongkor:1666,sudah:17300,belum:5416,produksi:51358,target:67438,menghasilkan:25,belumMenghasilkan:8,status:'gold',label:'Belum Lengkap'},
+  {no:2,rph:'Kanyoran',bkph:'BKPH Kediri',total:35,aktif:45093,telat:7176,bongkor:3863,sudah:45654,belum:10478,produksi:161681,target:198788,menghasilkan:28,belumMenghasilkan:7,status:'gold',label:'Belum Lengkap'},
+  {no:3,rph:'Pamongan',bkph:'BKPH Kediri',total:27,aktif:45162,telat:4010,bongkor:2159,sudah:50304,belum:1027,produksi:103576,target:92538,menghasilkan:26,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:4,rph:'Parang',bkph:'BKPH Kediri',total:36,aktif:21635,telat:3382,bongkor:1821,sudah:22127,belum:4711,produksi:80975,target:98213,menghasilkan:30,belumMenghasilkan:6,status:'gold',label:'Belum Lengkap'},
+  {no:5,rph:'Sambiroto',bkph:'BKPH Kediri',total:66,aktif:62222,telat:7364,bongkor:3966,sudah:72081,belum:1471,produksi:214504,target:218023,menghasilkan:65,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:1,rph:'Bajulan',bkph:'BKPH Pace',total:28,aktif:21469,telat:2928,bongkor:1577,sudah:23540,belum:2434,produksi:67971,target:75000,menghasilkan:25,belumMenghasilkan:3,status:'gold',label:'Belum Lengkap'},
+  {no:2,rph:'Gedangklutuk',bkph:'BKPH Pace',total:35,aktif:16749,telat:1856,bongkor:999,sudah:19212,belum:392,produksi:45785,target:45000,menghasilkan:34,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:3,rph:'Makuto',bkph:'BKPH Pace',total:65,aktif:49118,telat:5045,bongkor:2716,sudah:55741,belum:1138,produksi:107530,target:102000,menghasilkan:64,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:4,rph:'Plangkat',bkph:'BKPH Pace',total:5,aktif:5053,telat:416,bongkor:224,sudah:5579,belum:114,produksi:15531,target:12000,menghasilkan:5,belumMenghasilkan:0,status:'green',label:'Lengkap'},
+  {no:5,rph:'Salam Judeg',bkph:'BKPH Pace',total:42,aktif:22649,telat:2629,bongkor:1416,sudah:26160,belum:534,produksi:64602,target:65000,menghasilkan:41,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:6,rph:'Sugihan',bkph:'BKPH Pace',total:43,aktif:43929,telat:5666,bongkor:3051,sudah:49367,belum:3279,produksi:127529,target:136000,menghasilkan:40,belumMenghasilkan:3,status:'gold',label:'Belum Lengkap'},
+  {no:1,rph:'Bendungan',bkph:'BKPH Trenggalek',total:153,aktif:189903,telat:23065,bongkor:12420,sudah:218680,belum:6708,produksi:575385,target:593036,menghasilkan:148,belumMenghasilkan:5,status:'green',label:'Lengkap'},
+  {no:2,rph:'Durenan',bkph:'BKPH Trenggalek',total:23,aktif:11668,telat:1417,bongkor:763,sudah:13435,belum:413,produksi:33191,target:34210,menghasilkan:22,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+  {no:3,rph:'Sumurup',bkph:'BKPH Trenggalek',total:106,aktif:141038,telat:18828,bongkor:10138,sudah:156141,belum:13863,produksi:569607,target:620180,menghasilkan:97,belumMenghasilkan:9,status:'gold',label:'Belum Lengkap'},
+  {no:4,rph:'Trenggalek',bkph:'BKPH Trenggalek',total:104,aktif:324778,telat:36095,bongkor:19435,sudah:372702,belum:7606,produksi:713777,target:702574,menghasilkan:102,belumMenghasilkan:2,status:'green',label:'Lengkap'},
+  {no:1,rph:'Gondang',bkph:'BKPH Tulungagung',total:43,aktif:67926,telat:13474,bongkor:7256,sudah:58930,belum:29726,produksi:215479,target:324170,menghasilkan:29,belumMenghasilkan:14,status:'red',label:'Tidak Lengkap'},
+  {no:2,rph:'Jatiwekas',bkph:'BKPH Tulungagung',total:38,aktif:42690,telat:6141,bongkor:3306,sudah:45631,belum:6506,produksi:168286,target:192279,menghasilkan:33,belumMenghasilkan:5,status:'gold',label:'Belum Lengkap'},
+  {no:3,rph:'Karangrejo',bkph:'BKPH Tulungagung',total:62,aktif:52410,telat:6685,bongkor:3600,sudah:59172,belum:3523,produksi:181822,target:192648,menghasilkan:59,belumMenghasilkan:3,status:'gold',label:'Belum Lengkap'},
+  {no:4,rph:'Pagerwojo',bkph:'BKPH Tulungagung',total:129,aktif:144884,telat:20159,bongkor:10854,sudah:157382,belum:18515,produksi:501326,target:560303,menghasilkan:115,belumMenghasilkan:14,status:'gold',label:'Belum Lengkap'},
+  {no:5,rph:'Sendang',bkph:'BKPH Tulungagung',total:53,aktif:97650,telat:8795,bongkor:4736,sudah:108957,belum:2224,produksi:256760,target:230656,menghasilkan:52,belumMenghasilkan:1,status:'green',label:'Lengkap'},
+];
+function fmt(n){return n.toLocaleString('id-ID');}
+
+let rphChartInstance;
+function renderRphChart(role){
+  // Asper/KBKPH hanya melihat diagram RPH di wilayah BKPH-nya sendiri
+  const meta = roleMeta[role];
+  const data = (role==='asper' && meta) ? rphData.filter(r=>r.bkph===meta.role) : rphData;
+  if(rphChartInstance){
+    rphChartInstance.data.labels = data.map(r=>r.rph);
+    rphChartInstance.data.datasets[0].data = data.map(r=>r.aktif);
+    rphChartInstance.data.datasets[1].data = data.map(r=>r.produksi);
+    rphChartInstance.update();
+  }
+}
+
+function renderRekapRows(bodyId, withActions, role){
+  const meta = role ? roleMeta[role] : null;
+  let data = rphData;
+  if(role==='krph' && meta) data = rphData.filter(r=>('RPH '+r.rph)===meta.role);
+  else if(role==='asper' && meta) data = rphData.filter(r=>r.bkph===meta.role);
+  const body=document.getElementById(bodyId);
+  let rows = data.map(r=>`<tr>
+    <td>${r.no}</td><td><b>${r.rph}</b></td><td>${r.bkph}</td><td>${fmt(r.aktif)}</td><td>${fmt(r.telat)}</td><td>${fmt(r.bongkor)}</td>
+    <td>${fmt(r.sudah)}</td><td>${fmt(r.belum)}</td><td>${fmt(r.produksi)}</td>
+    ${withActions? `<td><span class="badge ${r.status}">${r.label}</span></td>`:''}
+  </tr>`).join('');
+  const totals = data.reduce((a,r)=>({total:a.total+r.total,aktif:a.aktif+r.aktif,telat:a.telat+r.telat,bongkor:a.bongkor+r.bongkor,sudah:a.sudah+r.sudah,belum:a.belum+r.belum,produksi:a.produksi+r.produksi}),{total:0,aktif:0,telat:0,bongkor:0,sudah:0,belum:0,produksi:0});
+  rows += `<tr class="total-row"><td colspan="3">Total</td><td>${fmt(totals.aktif)}</td><td>${fmt(totals.telat)}</td><td>${fmt(totals.bongkor)}</td><td>${fmt(totals.sudah)}</td><td>${fmt(totals.belum)}</td><td>${fmt(totals.produksi)}</td>${withActions?'<td></td><td></td>':''}</tr>`;
+  body.innerHTML = rows;
+}
+renderRekapRows('rekapRphBody', false, 'admin');
+
+/* ---------- DASHBOARD SCOPE (KRPH hanya melihat data wilayah RPH-nya sendiri) ---------- */
+function setText(id, text){ const el=document.getElementById(id); if(el) el.textContent = text; }
+function updateLegend(id, items, total){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const rows = items.map(it=>{
+    const pctVal = total? (it.val/total*100).toFixed(2).replace('.',',')+'%' : '0,00%';
+    return `<div class="legend-row"><span class="dot" style="background:${it.color}"></span><span class="name">${it.name}</span><span class="n">${fmt(it.val)}</span><span class="p">${pctVal}</span></div>`;
+  }).join('');
+  el.innerHTML = rows + `<div class="legend-total"><span>Total</span><span>${fmt(total)} · 100%</span></div>`;
+}
+function updateDashboardScope(role){
+  const isKrph = role==='krph';
+  const isAsper = role==='asper';
+  const scopeHead = document.getElementById('dashScopeHead');
+  const scopeNameEl = document.getElementById('dashScopeName');
+  if(scopeHead) scopeHead.style.display = (isKrph || isAsper) ? '' : 'none';
+
+  let stats, scopeLabel, scopeNote;
+  if(isKrph){
+    const meta = roleMeta.krph;
+    const rphName = meta.role.replace('RPH ','');
+    const r = rphData.find(x=>x.rph===rphName) || {};
+    stats = { totalPetak:r.total||0, aktif:r.aktif||0, telat:r.telat||0, bongkor:r.bongkor||0,
+      produksi:r.produksi||0, talangSudah:r.sudah||0, talangBelum:r.belum||0,
+      menghasilkan:r.menghasilkan||0, belumMenghasilkan:r.belumMenghasilkan||0 };
+    scopeLabel = meta.role;
+    scopeNote = meta.role;
+    if(scopeNameEl) scopeNameEl.textContent = meta.role;
+  } else if(isAsper){
+    const meta = roleMeta.asper;
+    const rows = rphData.filter(r=>r.bkph===meta.role);
+    stats = rows.reduce((a,r)=>({
+      totalPetak:a.totalPetak+r.total, aktif:a.aktif+r.aktif, telat:a.telat+r.telat, bongkor:a.bongkor+r.bongkor,
+      produksi:a.produksi+r.produksi, talangSudah:a.talangSudah+r.sudah, talangBelum:a.talangBelum+r.belum,
+      menghasilkan:a.menghasilkan+r.menghasilkan, belumMenghasilkan:a.belumMenghasilkan+r.belumMenghasilkan
+    }), {totalPetak:0,aktif:0,telat:0,bongkor:0,produksi:0,talangSudah:0,talangBelum:0,menghasilkan:0,belumMenghasilkan:0});
+    const krphList = rows.map(r=>'KRPH '+r.rph).join(', ') || '-';
+    scopeLabel = meta.role + ' — Meliputi: ' + krphList;
+    scopeNote = meta.role + ' (meliputi: ' + krphList + ')';
+    if(scopeNameEl) scopeNameEl.textContent = scopeNote;
+  } else {
+    stats = { totalPetak:152, aktif:24583, telat:6214, bongkor:3186, produksi:98450, talangSudah:26845, talangBelum:7138, menghasilkan:98, belumMenghasilkan:54 };
+    scopeLabel = 'Seluruh KPH Kediri';
+  }
+
+  const totalQuare = stats.aktif + stats.telat + stats.bongkor;
+  const pct = n => totalQuare? (n/totalQuare*100).toFixed(2).replace('.',',')+'%' : '0,00%';
+  setText('kpiTotalPetak', fmt(stats.totalPetak));
+  setText('kpiAktif', fmt(stats.aktif));
+  setText('kpiAktifPct', '('+pct(stats.aktif)+')');
+  setText('kpiTelat', fmt(stats.telat));
+  setText('kpiTelatPct', '('+pct(stats.telat)+')');
+  setText('kpiBongkor', fmt(stats.bongkor));
+  setText('kpiBongkorPct', '('+pct(stats.bongkor)+')');
+  setText('kpiProduksi', fmt(stats.produksi));
+
+  ['kpiTotalPetakDelta','kpiAktifDelta','kpiTelatDelta','kpiBongkorDelta','kpiProduksiDelta'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = (isKrph || isAsper) ? 'none' : '';
+  });
+
+  ['scopeQuare','scopeTalang','scopeProduksi','scopeTrend','scopeRekapPreview'].forEach(id=>setText(id, scopeLabel));
+
+  setText('rekapPreviewTitle', (isKrph || isAsper) ? ('Rekap — '+scopeLabel) : 'Rekap Per RPH');
+  setText('rekapScopeName', scopeLabel);
+
+  if(donutQuareInstance){ donutQuareInstance.data.datasets[0].data=[stats.aktif, stats.telat, stats.bongkor]; donutQuareInstance.update(); }
+  setText('donutQuareTotal', fmt(totalQuare));
+  updateLegend('legendQuare', [
+    {name:'Aktif', val:stats.aktif, color:'#237a45'},
+    {name:'Telat', val:stats.telat, color:'#f0ad4e'},
+    {name:'Tidak Aktif/Bongkor', val:stats.bongkor, color:'#e5484d'}
+  ], totalQuare);
+
+  const totalTalang = stats.talangSudah + stats.talangBelum;
+  if(donutTalangInstance){ donutTalangInstance.data.datasets[0].data=[stats.talangSudah, stats.talangBelum]; donutTalangInstance.update(); }
+  setText('donutTalangTotal', fmt(totalTalang));
+  updateLegend('legendTalang', [
+    {name:'Sudah Dilaksanakan', val:stats.talangSudah, color:'#237a45'},
+    {name:'Belum Dilaksanakan', val:stats.talangBelum, color:'#f0ad4e'}
+  ], totalTalang);
+
+  const totalPetakProd = stats.menghasilkan + stats.belumMenghasilkan;
+  if(donutProduksiInstance){ donutProduksiInstance.data.datasets[0].data=[stats.menghasilkan, stats.belumMenghasilkan]; donutProduksiInstance.update(); }
+  setText('donutProduksiTotal', fmt(totalPetakProd));
+  updateLegend('legendProduksi', [
+    {name:'Sudah Menghasilkan', val:stats.menghasilkan, color:'#237a45'},
+    {name:'Belum Menghasilkan', val:stats.belumMenghasilkan, color:'#f0ad4e'}
+  ], totalPetakProd);
+
+  if(typeof trendChartInstance !== 'undefined' && trendChartInstance){
+    if(isKrph || isAsper){
+      const shareRatio = stats.produksi / 98450;
+      trendChartInstance.data.datasets[0].data = kphTrendBase.map(v=>Math.round(v*shareRatio));
+    } else {
+      trendChartInstance.data.datasets[0].data = kphTrendBase.slice();
+    }
+    trendChartInstance.update();
+  }
+
+  renderRekapRows('rekapRphBody', false, role);
+}
+
+/* Draft */
+const drafts = [
+  {petak:'458 / A', rph:'Sumberjo', quare:1170, produksi:'12.450 Kg', diubah:'20 Mei, 09:10', status:'gold'},
+  {petak:'340 / A', rph:'Sumberjo', quare:1030, produksi:'10.900 Kg', diubah:'19 Mei, 16:40', status:'gold'},
+  {petak:'112 / D', rph:'Sumberjo', quare:820, produksi:'6.200 Kg', diubah:'18 Mei, 14:20', status:'gold'},
+];
+function renderDrafts(){
+  const q = (document.getElementById('draftSearchInput')?.value || '').trim().toLowerCase();
+  const filtered = q ? drafts.filter(d=>d.petak.toLowerCase().includes(q)) : drafts;
+  const emptyMsg = q ? `Tidak ditemukan draft untuk petak "${document.getElementById('draftSearchInput').value}"` : 'Tidak ada draft tersimpan';
+  document.getElementById('draftBody').innerHTML = filtered.map(d=>{
+    const i = drafts.indexOf(d);
+    return `<tr><td><b>${d.petak}</b></td><td>${d.rph}</td><td>${fmt(d.quare)}</td><td>${d.produksi}</td><td>${d.diubah}</td>
+    <td><span class="badge gold">Draft</span></td>
+    <td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="goto('input')">Lanjutkan</button>
+    <button class="btn btn-danger-outline" style="padding:5px 10px;font-size:11px;margin-left:6px;" onclick="delDraft(${i})">Hapus</button></td></tr>`;
+  }).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--sub);padding:30px;">${emptyMsg}</td></tr>`;
+}
+function delDraft(i){ drafts.splice(i,1); renderDrafts(); toast('Draft dihapus'); }
+renderDrafts();
+
+/* Riwayat — hanya mencakup RPH milik Mandor/TAD yang sedang login (RPH Sumberjo),
+   tapi mencakup input dari seluruh Mandor/TAD di RPH tersebut, bukan hanya milik sendiri. */
+const riwayat = [
+  {tgl:'20 Mei 2025', mandor:'Budi Santoso', petak:'458/A', rph:'Sumberjo', aktif:850, produksi:12450, status:'green', label:'Lengkap', verif:'Sistem (Otomatis)'},
+  {tgl:'19 Mei 2025', mandor:'Eko Wahyudi', petak:'320/C', rph:'Sumberjo', aktif:640, produksi:9100, status:'blue', label:'Terkirim', verif:'-'},
+  {tgl:'18 Mei 2025', mandor:'Sutrisno', petak:'201/B', rph:'Sumberjo', aktif:910, produksi:14200, status:'green', label:'Lengkap', verif:'Sistem (Otomatis)'},
+  {tgl:'17 Mei 2025', mandor:'Budi Santoso', petak:'112/D', rph:'Sumberjo', aktif:530, produksi:6200, status:'red', label:'Tidak Lengkap', verif:'Sistem (Otomatis)'},
+  {tgl:'16 Mei 2025', mandor:'Eko Wahyudi', petak:'275/A', rph:'Sumberjo', aktif:700, produksi:9800, status:'green', label:'Lengkap', verif:'Sistem (Otomatis)'},
+  {tgl:'15 Mei 2025', mandor:'Sutrisno', petak:'188/B', rph:'Sumberjo', aktif:585, produksi:8150, status:'blue', label:'Terkirim', verif:'-'},
+  {tgl:'14 Mei 2025', mandor:'Rudi Hartono', petak:'340/A', rph:'Sumberjo', aktif:760, produksi:10900, status:'green', label:'Lengkap', verif:'Sistem (Otomatis)'},
+];
+function initRiwayatFilter(){
+  const nameEl = document.getElementById('riwayatOwnerName');
+  const rphEl = document.getElementById('riwayatOwnerRph');
+  const meta = roleMeta.mandor;
+  if(nameEl && meta) nameEl.textContent = meta.name;
+  if(rphEl && meta) rphEl.textContent = meta.rph;
+}
+function renderRiwayat(){
+  // Riwayat Input hanya menampilkan data milik Mandor/TAD yang sedang login (bukan input Mandor/TAD lain)
+  const statusSel = document.getElementById('riwayatStatusFilter');
+  const statusVal = statusSel ? statusSel.value : 'semua';
+  const ownName = roleMeta.mandor.name;
+  const rows = riwayat.filter(r =>
+    r.mandor===ownName &&
+    (statusVal==='semua' || r.status===statusVal)
+  );
+  document.getElementById('riwayatBody').innerHTML = rows.map(r=>`
+  <tr><td>${r.tgl}</td><td><b>${r.mandor}</b></td><td>${r.petak}</td><td>${fmt(r.aktif)}</td><td>${fmt(r.produksi)}</td>
+  <td><span class="badge ${r.status}">${r.label}</span></td><td>${r.verif}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--sub);padding:30px;">Tidak ada data</td></tr>';
+}
+initRiwayatFilter();
+renderRiwayat();
+
+/* ---------- REKAPITULASI BKPH (dulu: Rekap RPH + Monitoring BKPH terpisah) ---------- */
+let bkphChartInstance;
+
+/* Menjumlahkan rphData per BKPH — jadi sumber datanya selalu sinkron dengan data RPH, bukan angka statis terpisah */
+function aggregateByBkph(rows){
+  const byName = {};
+  rows.forEach(r=>{
+    if(!byName[r.bkph]) byName[r.bkph] = {name:r.bkph, total:0, aktif:0, telat:0, bongkor:0, sudah:0, belum:0, produksi:0, statuses:[]};
+    const g = byName[r.bkph];
+    g.total+=r.total; g.aktif+=r.aktif; g.telat+=r.telat; g.bongkor+=r.bongkor; g.sudah+=r.sudah; g.belum+=r.belum; g.produksi+=r.produksi;
+    g.statuses.push(r.status);
+  });
+  return Object.values(byName).map(g=>{
+    const status = g.statuses.includes('red') ? 'red' : (g.statuses.includes('gold') ? 'gold' : 'green');
+    const label = status==='red' ? 'Perlu Perhatian' : (status==='gold' ? 'Belum Lengkap' : 'On Track');
+    return {...g, status, label};
+  });
+}
+function getRekapBkphList(role){
+  const meta = roleMeta[role];
+  if(role==='krph' && meta){
+    const rphName = meta.role.replace('RPH ','');
+    const r = rphData.find(x=>x.rph===rphName);
+    return r ? [r.bkph] : [];
+  }
+  if(role==='asper' && meta) return [meta.role];
+  return [...new Set(rphData.map(r=>r.bkph))];
+}
+
+/* Chart & ringkasan verifikasi di Dashboard (dulu isi halaman terpisah Monitoring BKPH) */
+function renderDashboardBkph(role){
+  const meta = roleMeta[role];
+  if(role==='asper' && meta){
+    const rows = rphData.filter(r=>r.bkph===meta.role);
+    if(bkphChartInstance){
+      bkphChartInstance.data.labels = rows.map(r=>'KRPH '+r.rph);
+      bkphChartInstance.data.datasets[0].data = rows.map(r=>r.produksi);
+      bkphChartInstance.update();
+    }
+    return;
+  }
+  const groups = aggregateByBkph(rphData);
+  if(bkphChartInstance){
+    bkphChartInstance.data.labels = groups.map(g=>g.name);
+    bkphChartInstance.data.datasets[0].data = groups.map(g=>g.produksi);
+    bkphChartInstance.update();
+  }
+}
+
+/* Filter periode Rekapitulasi BKPH: tombol cepat (1 minggu / periode 1-15 / periode 16-akhir / 1 bulan) + rentang tanggal bebas */
+const BULAN_ID_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+function toISODate(d){ return d.toISOString().slice(0,10); }
+function setRekapPeriode(mode){
+  const dariEl = document.getElementById('rekapFilterDari');
+  const sampaiEl = document.getElementById('rekapFilterSampai');
+  if(mode !== 'custom'){
+    const ref = new Date(2025,4,20); // tanggal referensi data mockup: 20 Mei 2025
+    const y = ref.getFullYear(), m = ref.getMonth();
+    const lastDay = new Date(y, m+1, 0).getDate();
+    if(mode==='minggu'){
+      const start = new Date(ref); start.setDate(ref.getDate()-6);
+      dariEl.value = toISODate(start); sampaiEl.value = toISODate(ref);
+    } else if(mode==='periode1'){
+      dariEl.value = toISODate(new Date(y,m,1)); sampaiEl.value = toISODate(new Date(y,m,15));
+    } else if(mode==='periode2'){
+      dariEl.value = toISODate(new Date(y,m,16)); sampaiEl.value = toISODate(new Date(y,m,lastDay));
+    } else if(mode==='bulan'){
+      dariEl.value = toISODate(new Date(y,m,1)); sampaiEl.value = toISODate(new Date(y,m,lastDay));
+    }
+  }
+  document.querySelectorAll('#rekapPeriodeButtons .btn').forEach(b=>b.classList.toggle('active', b.dataset.periode===mode));
+  renderRekapPage(currentRole);
+}
+function formatTglID(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  return d+' '+BULAN_ID_FULL[m-1]+' '+y;
+}
+function updateRekapPeriodeLabel(){
+  const dariEl = document.getElementById('rekapFilterDari');
+  const sampaiEl = document.getElementById('rekapFilterSampai');
+  const label = document.getElementById('rekapPeriodeLabel');
+  if(!dariEl || !sampaiEl || !label) return;
+  if(dariEl.value && sampaiEl.value){
+    label.textContent = 'Menampilkan data periode ' + formatTglID(dariEl.value) + ' s/d ' + formatTglID(sampaiEl.value);
+  }
+}
+
+/* Halaman Rekapitulasi BKPH: filter "Semua BKPH" (agregat per BKPH) atau drill-down ke rincian per RPH dalam 1 BKPH */
+function renderRekapPage(role){
+  role = role || currentRole;
+  const meta = roleMeta[role];
+  const isKrph = role==='krph';
+  const isAsper = role==='asper';
+  const bkphList = getRekapBkphList(role);
+
+  const sel = document.getElementById('rekapFilterBkph');
+  if(sel){
+    if(isKrph || isAsper){
+      sel.innerHTML = bkphList.map(b=>`<option value="${b}">${b}</option>`).join('');
+      sel.disabled = true;
+    } else {
+      const prevVal = sel.value;
+      sel.disabled = false;
+      sel.innerHTML = '<option value="semua">Semua BKPH</option>' + bkphList.map(b=>`<option value="${b}">${b}</option>`).join('');
+      if([...sel.options].some(o=>o.value===prevVal)) sel.value = prevVal;
+    }
+  }
+  const selectedBkph = sel ? sel.value : 'semua';
+
+  const thead = document.getElementById('rekapTableHead');
+  const tbody = document.getElementById('rekapTableBody');
+  if(!thead || !tbody) return;
+
+  if(selectedBkph === 'semua' && !isKrph && !isAsper){
+    thead.innerHTML = '<tr><th>BKPH</th><th>Total Petak</th><th>Aktif</th><th>Telat</th><th>Bongkor</th><th>Talang Sudah</th><th>Talang Belum</th><th>Produksi (Kg)</th><th>Status</th><th>Aksi</th></tr>';
+    const groups = aggregateByBkph(rphData);
+    tbody.innerHTML = groups.map(g=>`<tr>
+      <td><b>${g.name}</b></td><td>${g.total}</td><td>${fmt(g.aktif)}</td><td>${fmt(g.telat)}</td><td>${fmt(g.bongkor)}</td>
+      <td>${fmt(g.sudah)}</td><td>${fmt(g.belum)}</td><td>${fmt(g.produksi)}</td>
+      <td><span class="badge ${g.status}">${g.label}</span></td>
+      <td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="document.getElementById('rekapFilterBkph').value='${g.name}';renderRekapPage(currentRole);">Detail</button></td>
+    </tr>`).join('');
+  } else {
+    const bkphName = (isKrph || isAsper) ? bkphList[0] : selectedBkph;
+    thead.innerHTML = '<tr><th>No</th><th>RPH</th><th>Total Petak</th><th>Aktif</th><th>Telat</th><th>Bongkor</th><th>Talang Sudah</th><th>Talang Belum</th><th>Produksi (Kg)</th><th>Status Kelengkapan</th></tr>';
+    let rows = rphData.filter(r=>r.bkph===bkphName);
+    if(isKrph && meta){
+      const rphName = meta.role.replace('RPH ','');
+      rows = rows.filter(r=>r.rph===rphName);
+    }
+    let body = rows.map(r=>`<tr>
+      <td>${r.no}</td><td><b>${r.rph}</b></td><td>${r.total}</td><td>${fmt(r.aktif)}</td><td>${fmt(r.telat)}</td><td>${fmt(r.bongkor)}</td>
+      <td>${fmt(r.sudah)}</td><td>${fmt(r.belum)}</td><td>${fmt(r.produksi)}</td>
+      <td><span class="badge ${r.status}">${r.label}</span></td>
+    </tr>`).join('');
+    if(rows.length){
+      const totals = rows.reduce((a,r)=>({total:a.total+r.total,aktif:a.aktif+r.aktif,telat:a.telat+r.telat,bongkor:a.bongkor+r.bongkor,sudah:a.sudah+r.sudah,belum:a.belum+r.belum,produksi:a.produksi+r.produksi}),{total:0,aktif:0,telat:0,bongkor:0,sudah:0,belum:0,produksi:0});
+      body += `<tr class="total-row"><td colspan="2">Total</td><td>${totals.total}</td><td>${fmt(totals.aktif)}</td><td>${fmt(totals.telat)}</td><td>${fmt(totals.bongkor)}</td><td>${fmt(totals.sudah)}</td><td>${fmt(totals.belum)}</td><td>${fmt(totals.produksi)}</td><td></td></tr>`;
+    }
+    tbody.innerHTML = body || '<tr><td colspan="10" style="text-align:center;color:var(--sub);padding:24px;">Tidak ada data</td></tr>';
+  }
+
+  const scopeName = (isKrph || isAsper) ? (bkphList[0] || '-') : (selectedBkph==='semua' ? 'Seluruh KPH Kediri' : selectedBkph);
+  setText('rekapScopeName', scopeName);
+  updateRekapPeriodeLabel();
+}
+
+/* ---------- PETA SEBARAN RPH ---------- */
+/* Koordinat posisi pin tiap RPH pada peta ilustratif (persen dari lebar/tinggi peta) */
+const petaCoords = {
+  'Bandung':{x:10.5,y:22.0},
+  'Besuki':{x:17.5,y:22.0},
+  'Watulimo':{x:10.5,y:34.0},
+  'Banjar':{x:33.3,y:22.0},
+  'Dongko Selatan':{x:38.0,y:22.0},
+  'Dongko Utara':{x:42.7,y:22.0},
+  'Panggul':{x:33.3,y:34.0},
+  'Sumberbening':{x:38.0,y:34.0},
+  'Kampak Selatan':{x:58.5,y:22.0},
+  'Kampak Utara':{x:65.5,y:22.0},
+  'Munjungan Barat':{x:58.5,y:34.0},
+  'Munjungan Timur':{x:65.5,y:34.0},
+  'Gandusari':{x:82.5,y:22.0},
+  'Karangan':{x:89.5,y:22.0},
+  'Pule':{x:82.5,y:34.0},
+  'Tugu':{x:89.5,y:34.0},
+  'Kalipang':{x:9.3,y:70.0},
+  'Kanyoran':{x:14.0,y:70.0},
+  'Pamongan':{x:18.7,y:70.0},
+  'Parang':{x:9.3,y:82.0},
+  'Sambiroto':{x:14.0,y:82.0},
+  'Bajulan':{x:33.3,y:70.0},
+  'Gedangklutuk':{x:38.0,y:70.0},
+  'Makuto':{x:42.7,y:70.0},
+  'Plangkat':{x:33.3,y:82.0},
+  'Salam Judeg':{x:38.0,y:82.0},
+  'Sugihan':{x:42.7,y:82.0},
+  'Bendungan':{x:58.5,y:70.0},
+  'Durenan':{x:65.5,y:70.0},
+  'Sumurup':{x:58.5,y:82.0},
+  'Trenggalek':{x:65.5,y:82.0},
+  'Gondang':{x:81.3,y:70.0},
+  'Jatiwekas':{x:86.0,y:70.0},
+  'Karangrejo':{x:90.7,y:70.0},
+  'Pagerwojo':{x:81.3,y:82.0},
+  'Sendang':{x:86.0,y:82.0},
+};
+const petaStatusColor = {green:'#237a45', gold:'#f0ad4e', red:'#e5484d'};
+
+function getPetaData(role){
+  const meta = roleMeta[role];
+  if(role==='krph' && meta){
+    const rphName = meta.role.replace('RPH ','');
+    return rphData.filter(r=>r.rph===rphName);
+  }
+  if(role==='asper' && meta) return rphData.filter(r=>r.bkph===meta.role);
+  return rphData;
+}
+
+function renderPetaSebaran(role){
+  role = role || currentRole;
+  const wrap = document.getElementById('petaPins');
+  if(!wrap) return; // halaman peta tidak tersedia untuk role ini
+
+  const meta = roleMeta[role];
+  const data = getPetaData(role);
+
+  const noteEl = document.getElementById('petaScopeNote');
+  if(noteEl){
+    if(role==='krph' && meta) noteEl.textContent = 'Menampilkan lokasi ' + meta.role;
+    else if(role==='asper' && meta) noteEl.textContent = 'Menampilkan sebaran RPH di ' + meta.role;
+    else noteEl.textContent = 'Menampilkan sebaran seluruh RPH di KPH Kediri';
+  }
+
+  wrap.innerHTML = data.map(r=>{
+    const c = petaCoords[r.rph] || {x:50,y:50};
+    const color = petaStatusColor[r.status] || '#237a45';
+    return `<div class="map-pin" data-rph="${r.rph}" style="left:${c.x}%;top:${c.y}%;" onclick="showPetaDetail('${r.rph}', this)">
+      <div class="pin-dot" style="background:${color};"></div>
+      <div class="pin-label">RPH ${r.rph}</div>
+    </div>`;
+  }).join('');
+
+  const tbody = document.getElementById('petaTableBody');
+  if(tbody){
+    tbody.innerHTML = data.map(r=>`<tr>
+      <td><b>RPH ${r.rph}</b></td><td>${r.bkph}</td><td>${r.total}</td><td>${fmt(r.produksi)}</td>
+      <td><span class="badge ${r.status}">${r.label}</span></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--sub);padding:24px;">Tidak ada data</td></tr>';
+  }
+
+  const detailBody = document.getElementById('petaDetailBody');
+  if(detailBody) detailBody.innerHTML = 'Klik salah satu titik pada peta untuk melihat detail RPH.';
+}
+
+function showPetaDetail(rphName, el){
+  document.querySelectorAll('.map-pin').forEach(p=>p.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const r = rphData.find(x=>x.rph===rphName);
+  const detailBody = document.getElementById('petaDetailBody');
+  if(!r || !detailBody) return;
+  detailBody.innerHTML = `
+    <div style="font-size:14px;font-weight:800;color:var(--green-900);margin-bottom:2px;">RPH ${r.rph}</div>
+    <div style="font-size:11.5px;color:var(--sub);margin-bottom:10px;">${r.bkph}</div>
+    <div class="kv"><span class="k">Total Petak</span><span class="v">${fmt(r.total)}</span></div>
+    <div class="kv"><span class="k">Quare Aktif</span><span class="v">${fmt(r.aktif)}</span></div>
+    <div class="kv"><span class="k">Quare Telat</span><span class="v">${fmt(r.telat)}</span></div>
+    <div class="kv"><span class="k">Quare Bongkor</span><span class="v">${fmt(r.bongkor)}</span></div>
+    <div class="kv"><span class="k">Talang Sudah</span><span class="v">${fmt(r.sudah)}</span></div>
+    <div class="kv"><span class="k">Talang Belum</span><span class="v">${fmt(r.belum)}</span></div>
+    <div class="kv"><span class="k">Produksi</span><span class="v">${fmt(r.produksi)} Kg</span></div>
+    <div class="kv" style="border-bottom:none;"><span class="k">Status Kelengkapan</span><span class="badge ${r.status}">${r.label}</span></div>
+  `;
+}
+
+/* Rekap seluruh data yang diinput per Mandor / TAD (untuk Dashboard) */
+const mandorData = [
+  {nama:'Nova Dwi S', rph:'RPH Bandung', aktif:7942, telat:1425, bongkor:767, talang:73.49, produksi:37131, tanggal:'20 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Susanto B', rph:'RPH Besuki', aktif:13699, telat:1129, bongkor:608, talang:98.0, produksi:58443, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Suratin', rph:'RPH Watulimo', aktif:6647, telat:1437, bongkor:774, talang:60.15, produksi:30593, tanggal:'18 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Masrodin', rph:'RPH Banjar', aktif:11771, telat:1458, bongkor:786, talang:95.96, produksi:33587, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Irwanto', rph:'RPH Dongko Selatan', aktif:38593, telat:3180, bongkor:1712, talang:98.0, produksi:141446, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Khoirul Faktur E', rph:'RPH Dongko Selatan', aktif:24398, telat:2019, bongkor:1088, talang:98.0, produksi:79224, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Puji Harsono', rph:'RPH Dongko Selatan', aktif:10695, telat:1255, bongkor:676, talang:98.0, produksi:44468, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Andi Asngari', rph:'RPH Dongko Utara', aktif:27774, telat:3343, bongkor:1800, talang:97.5, produksi:85799, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Andik Setyo K', rph:'RPH Dongko Utara', aktif:25433, telat:3080, bongkor:1658, talang:97.19, produksi:84068, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Angga Piki S', rph:'RPH Dongko Utara', aktif:19109, telat:2569, bongkor:1383, talang:91.45, produksi:64245, tanggal:'16 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Bayu Setyo N', rph:'RPH Dongko Utara', aktif:22436, telat:2328, bongkor:1254, talang:98.0, produksi:73450, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Ekel Cahyono', rph:'RPH Dongko Utara', aktif:21853, telat:2699, bongkor:1453, talang:96.14, produksi:70181, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Erlambang Prasetyo', rph:'RPH Dongko Utara', aktif:18791, telat:2353, bongkor:1267, talang:95.4, produksi:63676, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Misran', rph:'RPH Dongko Utara', aktif:16010, telat:1319, bongkor:711, talang:98.0, produksi:55384, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'M Azis Hidayat', rph:'RPH Panggul', aktif:11097, telat:1391, bongkor:749, talang:95.32, produksi:45754, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Rizki Prastiono', rph:'RPH Panggul', aktif:31733, telat:3775, bongkor:2033, talang:98.0, produksi:85365, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Suyono', rph:'RPH Panggul', aktif:10558, telat:1481, bongkor:798, talang:88.98, produksi:37372, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Tumingan', rph:'RPH Panggul', aktif:16114, telat:2500, bongkor:1347, talang:82.91, produksi:53892, tanggal:'18 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Arif Priyandika', rph:'RPH Sumberbening', aktif:37098, telat:4351, bongkor:2343, talang:98.0, produksi:100833, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Arif Sudibyo', rph:'RPH Sumberbening', aktif:45100, telat:4701, bongkor:2531, talang:98.0, produksi:108910, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Dwi Joko Lelono', rph:'RPH Sumberbening', aktif:27247, telat:4407, bongkor:2372, talang:80.3, produksi:68258, tanggal:'20 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Hendri Rizkiono', rph:'RPH Sumberbening', aktif:22654, telat:2677, bongkor:1441, talang:98.0, produksi:73858, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Heri Siswanto', rph:'RPH Sumberbening', aktif:22781, telat:5524, bongkor:2974, talang:51.32, produksi:41313, tanggal:'18 Mei 2025', status:'red', label:'Tidak Lengkap'},
+  {nama:'Joko Rahwono', rph:'RPH Sumberbening', aktif:27952, telat:3769, bongkor:2029, talang:91.28, produksi:76676, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'M Zainal Abidin', rph:'RPH Sumberbening', aktif:46210, telat:5053, bongkor:2720, talang:98.0, produksi:161794, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Mahendra P', rph:'RPH Sumberbening', aktif:25098, telat:3965, bongkor:2135, talang:81.79, produksi:56847, tanggal:'20 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Nardianto', rph:'RPH Sumberbening', aktif:25425, telat:3225, bongkor:1737, talang:94.68, produksi:66275, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Burhanuddin Yusuf Afandy', rph:'RPH Kampak Selatan', aktif:13406, telat:2580, bongkor:1389, talang:68.63, produksi:38076, tanggal:'18 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Misni', rph:'RPH Kampak Selatan', aktif:12280, telat:2363, bongkor:1273, talang:68.63, produksi:33984, tanggal:'17 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Mujiono', rph:'RPH Kampak Selatan', aktif:23870, telat:1967, bongkor:1059, talang:98.0, produksi:96382, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Samikir', rph:'RPH Kampak Selatan', aktif:28594, telat:2356, bongkor:1269, talang:98.0, produksi:88215, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sayudi', rph:'RPH Kampak Selatan', aktif:16131, telat:1978, bongkor:1064, talang:96.53, produksi:66121, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Silo Dwi Krisdiyantoro', rph:'RPH Kampak Selatan', aktif:33899, telat:2793, bongkor:1504, talang:98.0, produksi:124464, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Tolip', rph:'RPH Kampak Selatan', aktif:25613, telat:3585, bongkor:1930, talang:89.13, produksi:74427, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Triyana', rph:'RPH Kampak Selatan', aktif:33174, telat:2733, bongkor:1472, talang:98.0, produksi:130535, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Achmad Bahrul Alam', rph:'RPH Kampak Utara', aktif:15365, telat:2644, bongkor:1424, talang:76.26, produksi:53590, tanggal:'20 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Aswin Faizal Adnan', rph:'RPH Kampak Utara', aktif:12892, telat:1523, bongkor:820, talang:98.0, produksi:59193, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Dk Tatang', rph:'RPH Kampak Utara', aktif:19369, telat:2026, bongkor:1091, talang:98.0, produksi:71383, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Gandung Setya Putra', rph:'RPH Kampak Utara', aktif:33827, telat:3880, bongkor:2090, talang:98.0, produksi:144042, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Imam Safingi', rph:'RPH Kampak Utara', aktif:18017, telat:3101, bongkor:1669, talang:76.26, produksi:44474, tanggal:'16 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Mateus', rph:'RPH Kampak Utara', aktif:53920, telat:4580, bongkor:2467, talang:98.0, produksi:181098, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Miftakhul Huda', rph:'RPH Kampak Utara', aktif:14484, telat:1711, bongkor:921, talang:98.0, produksi:58998, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Prisma Andi P', rph:'RPH Kampak Utara', aktif:15336, telat:2639, bongkor:1422, talang:76.26, produksi:54048, tanggal:'18 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Satria Wibisono', rph:'RPH Kampak Utara', aktif:22646, telat:1924, bongkor:1036, talang:98.0, produksi:80331, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Suparno', rph:'RPH Kampak Utara', aktif:22120, telat:3205, bongkor:1725, talang:87.1, produksi:82921, tanggal:'16 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Surya Ari Widianata', rph:'RPH Kampak Utara', aktif:17326, telat:1812, bongkor:976, talang:98.0, produksi:66622, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Gatot Hariyanto', rph:'RPH Munjungan Barat', aktif:5058, telat:595, bongkor:320, talang:98.0, produksi:17008, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Musani', rph:'RPH Munjungan Timur', aktif:739, telat:83, bongkor:44, talang:98.0, produksi:1242, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Joko W', rph:'RPH Gandusari', aktif:32593, telat:3672, bongkor:1978, talang:98.0, produksi:61992, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Seta Dwi A', rph:'RPH Gandusari', aktif:20592, telat:2208, bongkor:1190, talang:98.0, produksi:51996, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sunaryo', rph:'RPH Gandusari', aktif:23233, telat:2932, bongkor:1579, talang:94.97, produksi:50100, tanggal:'20 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Dhimas Sn', rph:'RPH Karangan', aktif:19674, telat:2333, bongkor:1255, talang:98.0, produksi:64363, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Guyub P/pms', rph:'RPH Karangan', aktif:13779, telat:1715, bongkor:923, talang:95.72, produksi:49986, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Legono', rph:'RPH Karangan', aktif:31155, telat:3587, bongkor:1931, talang:98.0, produksi:68654, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Ribut S', rph:'RPH Karangan', aktif:17068, telat:2052, bongkor:1104, talang:97.57, produksi:48530, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Saroji', rph:'RPH Karangan', aktif:33166, telat:4130, bongkor:2224, talang:95.69, produksi:96100, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Suko W', rph:'RPH Karangan', aktif:33106, telat:4122, bongkor:2219, talang:95.7, produksi:66368, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Agung S', rph:'RPH Pule', aktif:28158, telat:3065, bongkor:1651, talang:98.0, produksi:103481, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Al Lail Yusuf H/pms', rph:'RPH Pule', aktif:21029, telat:1776, bongkor:956, talang:98.0, produksi:71581, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Dicko Ha', rph:'RPH Pule', aktif:40193, telat:3394, bongkor:1827, talang:98.0, produksi:112726, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Edi S', rph:'RPH Pule', aktif:39793, telat:3924, bongkor:2113, talang:98.0, produksi:124604, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sujianto/pms', rph:'RPH Pule', aktif:21802, telat:2150, bongkor:1158, talang:98.0, produksi:75641, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Thoyib I/pms', rph:'RPH Pule', aktif:16852, telat:1540, bongkor:830, talang:98.0, produksi:59315, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Tri Setyo Bu/pms', rph:'RPH Pule', aktif:21187, telat:2204, bongkor:1186, talang:98.0, produksi:72328, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Wijianto', rph:'RPH Pule', aktif:32454, telat:2854, bongkor:1537, talang:98.0, produksi:106492, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Eko Triono/pms', rph:'RPH Tugu', aktif:12310, telat:1932, bongkor:1041, talang:82.2, produksi:56495, tanggal:'20 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Heri S', rph:'RPH Tugu', aktif:23863, telat:3743, bongkor:2015, talang:82.24, produksi:83461, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Seno N', rph:'RPH Tugu', aktif:20850, telat:3273, bongkor:1762, talang:82.2, produksi:82478, tanggal:'18 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Setya Aji Tk/pms', rph:'RPH Tugu', aktif:20813, telat:3266, bongkor:1759, talang:82.21, produksi:59562, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Suparno', rph:'RPH Kalipang', aktif:8771, telat:1393, bongkor:751, talang:81.44, produksi:25536, tanggal:'16 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Yadi', rph:'RPH Kalipang', aktif:9192, telat:1696, bongkor:913, talang:71.56, produksi:25822, tanggal:'20 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'C Anam', rph:'RPH Kanyoran', aktif:22706, telat:3011, bongkor:1622, talang:92.22, produksi:77321, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Mahmudi', rph:'RPH Kanyoran', aktif:12368, telat:2020, bongkor:1088, talang:79.66, produksi:43441, tanggal:'18 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Mulyo sasongko', rph:'RPH Kanyoran', aktif:10245, telat:1997, bongkor:1075, talang:67.74, produksi:40918, tanggal:'17 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'M Nurokhim', rph:'RPH Pamongan', aktif:27420, telat:2435, bongkor:1311, talang:98.0, produksi:59140, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Santoso', rph:'RPH Pamongan', aktif:17742, telat:1575, bongkor:848, talang:98.0, produksi:44437, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Muklis sanjaya', rph:'RPH Parang', aktif:12489, telat:1952, bongkor:1052, talang:82.45, produksi:50828, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Witoyo', rph:'RPH Parang', aktif:3508, telat:548, bongkor:295, talang:82.48, produksi:11634, tanggal:'18 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Yahmin', rph:'RPH Parang', aktif:5637, telat:882, bongkor:475, talang:82.41, produksi:18513, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Dandi', rph:'RPH Sambiroto', aktif:16321, telat:1937, bongkor:1043, talang:98.0, produksi:59044, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Isma Putra Sr', rph:'RPH Sambiroto', aktif:17243, telat:2043, bongkor:1099, talang:98.0, produksi:52781, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'M Basuki', rph:'RPH Sambiroto', aktif:6214, telat:728, bongkor:392, talang:98.0, produksi:19395, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sapto H', rph:'RPH Sambiroto', aktif:7461, telat:870, bongkor:469, talang:98.0, produksi:26568, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Seto Suhandoko', rph:'RPH Sambiroto', aktif:14986, telat:1785, bongkor:961, talang:98.0, produksi:56717, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Tohari Budi.s', rph:'RPH Bajulan', aktif:21469, telat:2928, bongkor:1577, talang:90.63, produksi:67971, tanggal:'16 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'M Warsito', rph:'RPH Gedangklutuk', aktif:9189, telat:1018, bongkor:548, talang:98.0, produksi:23546, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Nyuwoto', rph:'RPH Gedangklutuk', aktif:7560, telat:838, bongkor:451, talang:98.0, produksi:22239, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Dedi Susanto', rph:'RPH Makuto', aktif:28162, telat:2890, bongkor:1556, talang:98.0, produksi:55637, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Yongki Al', rph:'RPH Makuto', aktif:20956, telat:2154, bongkor:1161, talang:98.0, produksi:51893, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sungkono', rph:'RPH Plangkat', aktif:5053, telat:416, bongkor:224, talang:98.0, produksi:15531, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Purwanto', rph:'RPH Salam Judeg', aktif:22649, telat:2629, bongkor:1416, talang:98.0, produksi:64602, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Dimas Andri S', rph:'RPH Sugihan', aktif:22534, telat:3195, bongkor:1720, talang:88.38, produksi:64516, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Endik P', rph:'RPH Sugihan', aktif:21419, telat:2456, bongkor:1322, talang:98.0, produksi:63012, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Joko Amboro', rph:'RPH Bendungan', aktif:22274, telat:2658, bongkor:1431, talang:97.96, produksi:76176, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Khoiru Ferta Mdc', rph:'RPH Bendungan', aktif:27445, telat:3356, bongkor:1808, talang:96.66, produksi:102132, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Makruf P.rival', rph:'RPH Bendungan', aktif:22488, telat:2754, bongkor:1483, talang:96.58, produksi:68518, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Nurhuda', rph:'RPH Bendungan', aktif:26092, telat:3098, bongkor:1668, talang:98.0, produksi:69691, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Rahmanto', rph:'RPH Bendungan', aktif:11345, telat:1353, bongkor:728, talang:98.0, produksi:41783, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Slamet', rph:'RPH Bendungan', aktif:10424, telat:1267, bongkor:683, talang:96.97, produksi:26230, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sukani', rph:'RPH Bendungan', aktif:12727, telat:1530, bongkor:824, talang:97.55, produksi:34961, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sulistiono', rph:'RPH Bendungan', aktif:45756, telat:5538, bongkor:2983, talang:97.21, produksi:111695, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Teguh Santoso96', rph:'RPH Bendungan', aktif:11400, telat:1479, bongkor:796, talang:93.46, produksi:44200, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Hendro Santosa', rph:'RPH Durenan', aktif:1094, telat:136, bongkor:73, talang:95.99, produksi:4518, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Jajik Hadi W.', rph:'RPH Durenan', aktif:8382, telat:1014, bongkor:546, talang:97.24, produksi:21157, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sugiharto', rph:'RPH Durenan', aktif:2193, telat:266, bongkor:144, talang:97.02, produksi:7515, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Agus Edy S.', rph:'RPH Sumurup', aktif:10775, telat:1514, bongkor:816, talang:88.89, produksi:49121, tanggal:'20 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Dian Yoga P.', rph:'RPH Sumurup', aktif:20525, telat:2903, bongkor:1564, talang:88.51, produksi:68415, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Jodo', rph:'RPH Sumurup', aktif:2415, telat:303, bongkor:163, talang:95.24, produksi:8598, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Joko Apriyanto', rph:'RPH Sumurup', aktif:26584, telat:3803, bongkor:2048, talang:87.84, produksi:100657, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Muhamad Imron P.', rph:'RPH Sumurup', aktif:15351, telat:1927, bongkor:1038, talang:95.24, produksi:68678, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Revi Okta L.', rph:'RPH Sumurup', aktif:15244, telat:2196, bongkor:1183, talang:87.43, produksi:63625, tanggal:'20 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Romadhona Nur B.', rph:'RPH Sumurup', aktif:11956, telat:1450, bongkor:782, talang:97.09, produksi:49601, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sandy Kristiawan', rph:'RPH Sumurup', aktif:9716, telat:1260, bongkor:678, talang:93.47, produksi:37052, tanggal:'18 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Sutrisno', rph:'RPH Sumurup', aktif:11283, telat:1486, bongkor:801, talang:92.59, produksi:47097, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Teguh Santosa75', rph:'RPH Sumurup', aktif:17154, telat:2006, bongkor:1080, talang:98.0, produksi:76763, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Abdul Alim', rph:'RPH Trenggalek', aktif:24904, telat:3056, bongkor:1646, talang:96.47, produksi:62262, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Aris Winarno', rph:'RPH Trenggalek', aktif:38815, telat:4223, bongkor:2274, talang:98.0, produksi:68517, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Dwi Darmanto', rph:'RPH Trenggalek', aktif:21763, telat:1856, bongkor:1000, talang:98.0, produksi:55551, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Edi Fajar', rph:'RPH Trenggalek', aktif:42000, telat:4760, bongkor:2564, talang:98.0, produksi:105675, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Hajir Ndaru P.', rph:'RPH Trenggalek', aktif:21886, telat:2726, bongkor:1467, talang:95.68, produksi:75708, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Hariyanto', rph:'RPH Trenggalek', aktif:25836, telat:3175, bongkor:1709, talang:96.4, produksi:61763, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Mujilan', rph:'RPH Trenggalek', aktif:51791, telat:5819, bongkor:3133, talang:98.0, produksi:66980, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Nasip', rph:'RPH Trenggalek', aktif:17922, telat:2374, bongkor:1279, talang:92.27, produksi:59975, tanggal:'18 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Verdiansyah D.', rph:'RPH Trenggalek', aktif:20951, telat:2526, bongkor:1361, talang:97.4, produksi:69771, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Zaki Nur Adin', rph:'RPH Trenggalek', aktif:59899, telat:4935, bongkor:2658, talang:98.0, produksi:87576, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Aan Sulisdianto', rph:'RPH Gondang', aktif:10496, telat:2244, bongkor:1209, talang:60.98, produksi:35327, tanggal:'20 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Dwi Cahyono', rph:'RPH Gondang', aktif:20498, telat:4383, bongkor:2360, talang:60.98, produksi:60152, tanggal:'19 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Fajaru Cahya Dinyka', rph:'RPH Gondang', aktif:11978, telat:2078, bongkor:1119, talang:75.74, produksi:39338, tanggal:'18 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Haryanto', rph:'RPH Gondang', aktif:8118, telat:1736, bongkor:935, talang:60.98, produksi:28648, tanggal:'17 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Nasutrion', rph:'RPH Gondang', aktif:16972, telat:2944, bongkor:1586, talang:75.73, produksi:52014, tanggal:'16 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Abu Sufiyan', rph:'RPH Jatiwekas', aktif:18719, telat:2122, bongkor:1142, talang:98.0, produksi:72573, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Supriyaji', rph:'RPH Jatiwekas', aktif:11038, telat:1520, bongkor:819, talang:90.06, produksi:38924, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Yoga Andhi Pradana', rph:'RPH Jatiwekas', aktif:13163, telat:2349, bongkor:1265, talang:73.83, produksi:56788, tanggal:'18 Mei 2025', status:'gold', label:'Belum Lengkap'},
+  {nama:'Dandung Setiawan', rph:'RPH Karangrejo', aktif:15538, telat:2015, bongkor:1085, talang:93.46, produksi:49335, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Fredo Ag', rph:'RPH Karangrejo', aktif:10909, telat:1251, bongkor:674, talang:98.0, produksi:42239, tanggal:'16 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Miyardi', rph:'RPH Karangrejo', aktif:10399, telat:1306, bongkor:703, talang:95.22, produksi:34781, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Sugianto', rph:'RPH Karangrejo', aktif:15559, telat:2116, bongkor:1140, talang:90.79, produksi:55466, tanggal:'19 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Agus Budianto', rph:'RPH Pagerwojo', aktif:19796, telat:2460, bongkor:1324, talang:95.8, produksi:65950, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Arnovan Ferdiansyah', rph:'RPH Pagerwojo', aktif:9873, telat:1404, bongkor:756, talang:88.19, produksi:41181, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Herianto', rph:'RPH Pagerwojo', aktif:15654, telat:2380, bongkor:1282, talang:84.16, produksi:59912, tanggal:'16 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Jupriono', rph:'RPH Pagerwojo', aktif:18852, telat:2861, bongkor:1541, talang:84.28, produksi:65325, tanggal:'20 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'M. Fadhli', rph:'RPH Pagerwojo', aktif:20588, telat:2176, bongkor:1172, talang:98.0, produksi:62395, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Pendik S.', rph:'RPH Pagerwojo', aktif:24853, telat:3556, bongkor:1916, talang:87.83, produksi:79515, tanggal:'18 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Sujinarwan', rph:'RPH Pagerwojo', aktif:23264, telat:3386, bongkor:1823, talang:86.82, produksi:79897, tanggal:'17 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Supriadi', rph:'RPH Pagerwojo', aktif:12287, telat:1751, bongkor:943, talang:88.06, produksi:47151, tanggal:'16 Mei 2025', status:'blue', label:'Terkirim'},
+  {nama:'Karyoto', rph:'RPH Sendang', aktif:28892, telat:2381, bongkor:1281, talang:98.0, produksi:73130, tanggal:'20 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Riyono', rph:'RPH Sendang', aktif:16402, telat:1485, bongkor:800, talang:98.0, produksi:50224, tanggal:'19 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Siswanto', rph:'RPH Sendang', aktif:25074, telat:2272, bongkor:1224, talang:98.0, produksi:67280, tanggal:'18 Mei 2025', status:'green', label:'Lengkap'},
+  {nama:'Suraji', rph:'RPH Sendang', aktif:26880, telat:2918, bongkor:1572, talang:98.0, produksi:66126, tanggal:'17 Mei 2025', status:'green', label:'Lengkap'},
+];
+let mandorChartInstance;
+function renderMandor(role){
+  // KRPH hanya melihat rekap Mandor/TAD di RPH-nya sendiri; role lain melihat seluruh KPH
+  const meta = roleMeta[role];
+  const data = (role==='krph' && meta) ? mandorData.filter(m=>m.rph===meta.role) : mandorData;
+
+  document.getElementById('mandorBody').innerHTML = data.map(m=>`
+    <tr><td><b>${m.nama}</b></td><td>${m.rph}</td><td>${fmt(m.aktif)}</td><td>${fmt(m.telat)}</td><td>${fmt(m.bongkor)}</td>
+    <td>${m.talang.toFixed(2).replace('.',',')}%</td><td>${fmt(m.produksi)}</td><td>${m.tanggal}</td>
+    <td><span class="badge ${m.status}">${m.label}</span></td></tr>`).join('');
+
+  if(mandorChartInstance){
+    mandorChartInstance.data.labels = data.map(m=>m.nama);
+    mandorChartInstance.data.datasets[0].data = data.map(m=>m.aktif);
+    mandorChartInstance.data.datasets[1].data = data.map(m=>m.telat);
+    mandorChartInstance.data.datasets[2].data = data.map(m=>m.bongkor);
+    mandorChartInstance.update();
+  }
+}
+renderMandor(currentRole);
+
+/* Laporan */
+const laporanRiwayat = [
+  {nama:'Rekap Produksi Getah - April 2025', periode:'April 2025', dibuat:'02 Mei 2025', format:'Excel'},
+  {nama:'Rekap Quare per RPH - April 2025', periode:'April 2025', dibuat:'02 Mei 2025', format:'Excel'},
+  {nama:'Progres Talang & Tempurung - Maret 2025', periode:'Maret 2025', dibuat:'01 Apr 2025', format:'Excel'},
+];
+function renderLaporanBody(){
+  document.getElementById('laporanBody').innerHTML = laporanRiwayat.map(l=>`
+    <tr><td>${l.nama}</td><td>${l.periode}</td><td>${l.dibuat}</td><td><span class="badge green">${l.format}</span></td>
+    <td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="toast('Mengunduh ${l.nama}')">${icon('download',13)} Unduh</button></td></tr>`).join('');
+}
+renderLaporanBody();
+
+function round2(n){ return Math.round((n+Number.EPSILON)*100)/100; }
+
+/* Detail Progres per Petak — acuan utama Laporan KPH: setiap baris = 1 petak,
+   berisi progres dalam persen (Quare, Talang & Tempurung) + estimasi produksi.
+   Sumber: mandorData (rekap seluruh entry per petak/mandor yang sudah diinput di KPH),
+   dilengkapi info BKPH dari rphData berdasarkan RPH yang sama.
+   Progres Produksi (%) = rata-rata dari 3 tahapan input pada form: Pembaharuan Quare,
+   Progres Naik Talang & Tempurung, dan Estimasi Produksi Getah dalam Petak — sehingga
+   mencerminkan seberapa lengkap/matang progres produksi petak tsb secara keseluruhan. */
+function getPetakLaporanData(){
+  return mandorData.map((m,i)=>{
+    const totalQuare = m.aktif + m.telat + m.bongkor;
+    const progresQuare = totalQuare ? (m.aktif/totalQuare*100) : 0;
+    const progresTalang = m.talang;
+    const rphName = m.rph.replace('RPH ','');
+    const rphRef = rphData.find(r=>r.rph===rphName);
+    const totalPetakProduksi = rphRef ? (rphRef.menghasilkan + rphRef.belumMenghasilkan) : 0;
+    const progresEstimasiProduksi = totalPetakProduksi ? (rphRef.menghasilkan/totalPetakProduksi*100) : 0;
+    const progresProduksi = (progresQuare + progresTalang + progresEstimasiProduksi) / 3;
+    return {
+      no:i+1,
+      petak:'PTK-'+String(i+1).padStart(4,'0'),
+      mandor:m.nama,
+      rph:m.rph,
+      bkph: rphRef ? rphRef.bkph : '-',
+      aktif:m.aktif, telat:m.telat, bongkor:m.bongkor,
+      progresQuare, progresTalang, progresEstimasiProduksi, progresProduksi,
+      produksi:m.produksi,
+      tanggal:m.tanggal
+    };
+  });
+}
+
+/* Data lengkap per petak tidak ditampilkan langsung di layar karena jumlah barisnya sangat besar —
+   cukup ditampilkan ringkasannya di sini, isi lengkapnya hanya muncul saat diunduh lewat Export Excel. */
+function renderLaporanPetakSummary(){
+  const el = document.getElementById('laporanPetakSummary');
+  if(!el) return;
+  const rows = getPetakLaporanData();
+  const n = rows.length || 1;
+  const pct = v => v.toFixed(2).replace('.',',')+'%';
+  const avgQuare = rows.reduce((s,r)=>s+r.progresQuare,0)/n;
+  const avgTalang = rows.reduce((s,r)=>s+r.progresTalang,0)/n;
+  const avgEstimasi = rows.reduce((s,r)=>s+r.progresEstimasiProduksi,0)/n;
+  const avgProduksi = rows.reduce((s,r)=>s+r.progresProduksi,0)/n;
+  const totalProduksi = rows.reduce((s,r)=>s+r.produksi,0);
+  el.innerHTML = `Total <b>${rows.length} petak</b> siap diunduh — rata-rata Pembaharuan Quare <b>${pct(avgQuare)}</b>,
+    Progres Naik Talang &amp; Tempurung <b>${pct(avgTalang)}</b>, Estimasi Produksi Getah dalam Petak <b>${pct(avgEstimasi)}</b>,
+    sehingga Progres Produksi <b>${pct(avgProduksi)}</b>, total Estimasi Produksi <b>${fmt(totalProduksi)} Kg</b>.
+    Klik "Export Excel" untuk melihat rincian lengkap per petak.`;
+}
+renderLaporanPetakSummary();
+
+function exportPetakDetailExcel(){
+  if(typeof XLSX==='undefined'){ toast('Modul Excel gagal dimuat, periksa koneksi internet lalu coba lagi'); return; }
+  const rows = getPetakLaporanData();
+  const aoa = [
+    ['Detail Progres per Petak - KPH Kediri'],
+    ['Diunduh: '+new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})],
+    [],
+    ['No','Petak','RPH','BKPH','Mandor / TAD','Pembaharuan Quare (%)','Progres Naik Talang & Tempurung (%)','Estimasi Produksi Getah dalam Petak (%)','Progres Produksi (%)','Produksi (Kg)','Tanggal Input'],
+  ];
+  rows.forEach(r=>aoa.push([r.no,r.petak,r.rph,r.bkph,r.mandor,round2(r.progresQuare),round2(r.progresTalang),round2(r.progresEstimasiProduksi),round2(r.progresProduksi),r.produksi,r.tanggal]));
+  const n = rows.length || 1;
+  const avgQuare = rows.reduce((s,r)=>s+r.progresQuare,0)/n;
+  const avgTalang = rows.reduce((s,r)=>s+r.progresTalang,0)/n;
+  const avgEstimasi = rows.reduce((s,r)=>s+r.progresEstimasiProduksi,0)/n;
+  const avgProduksi = rows.reduce((s,r)=>s+r.progresProduksi,0)/n;
+  const totalProduksi = rows.reduce((s,r)=>s+r.produksi,0);
+  aoa.push(['','','','','Total / Rata-rata Seluruh Petak', round2(avgQuare), round2(avgTalang), round2(avgEstimasi), round2(avgProduksi), totalProduksi, '']);
+
+  const colCount = 11;
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges'] = [
+    {s:{r:0,c:0}, e:{r:0,c:colCount-1}},
+    {s:{r:1,c:0}, e:{r:1,c:colCount-1}},
+  ];
+  const colWidths = new Array(colCount).fill(8);
+  aoa.forEach(row=>row.forEach((cell,i)=>{
+    if(i>=colCount) return;
+    const len = String(cell==null?'':cell).length;
+    colWidths[i] = Math.max(colWidths[i], Math.min(len+2,40));
+  }));
+  ws['!cols'] = colWidths.map(w=>({wch:w}));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Detail Petak');
+  XLSX.writeFile(wb, 'Detail_Progres_Petak_KPH_Kediri.xlsx');
+
+  laporanRiwayat.unshift({nama:'Detail Progres per Petak - KPH Kediri', periode:'-',
+    dibuat:new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}), format:'Excel'});
+  renderLaporanBody();
+  toast('Laporan Detail Progres per Petak berhasil diunduh ✔');
+}
+
+/* Level filter di Laporan: menyesuaikan wilayah tugas masing-masing role.
+   Filter berbasis BKPH (bukan per RPH satu-satu) supaya laporan tetap ringkas & konsisten dengan menu Rekapitulasi BKPH.
+   - Admin KPH  : bisa memilih Seluruh KPH Kediri atau salah satu BKPH.
+   - Asper/KBKPH: terkunci ke BKPH-nya sendiri (tidak bisa melihat BKPH lain).
+   - KRPH       : terkunci ke RPH-nya sendiri. */
+function renderLaporanLevelOptions(role){
+  const sel = document.getElementById('laporanLevel');
+  if(!sel) return;
+  const meta = roleMeta[role];
+  let opts = [];
+  if(role==='krph' && meta){
+    const rphName = meta.role.replace('RPH ','');
+    opts.push({v:'rph:'+rphName, t:meta.role});
+  } else if(role==='asper' && meta){
+    opts.push({v:'bkph:'+meta.role, t:meta.role+' (Semua RPH)'});
+  } else {
+    opts.push({v:'kph:ALL', t:'Seluruh KPH Kediri (Semua BKPH)'});
+    [...new Set(rphData.map(r=>r.bkph))].forEach(bk=>opts.push({v:'bkph:'+bk, t:bk+' (Semua RPH)'}));
+  }
+  sel.innerHTML = opts.map(o=>`<option value="${o.v}">${o.t}</option>`).join('');
+  sel.disabled = (role==='krph' || role==='asper');
+}
+
+function getLaporanScope(){
+  const sel = document.getElementById('laporanLevel');
+  const val = (sel && sel.value) || 'kph:ALL';
+  const sepIdx = val.indexOf(':');
+  const type = val.slice(0,sepIdx), name = val.slice(sepIdx+1);
+  if(type==='rph') return { level:'RPH '+name, rows: rphData.filter(r=>r.rph===name) };
+  if(type==='bkph') return { level:name, rows: rphData.filter(r=>r.bkph===name) };
+  return { level:'Seluruh KPH Kediri', rows: rphData };
+}
+
+/* Susunan kolom per jenis laporan, supaya isi Excel rapi & relevan (bukan satu tabel raksasa) */
+const JENIS_LAPORAN = {
+  produksi:{ title:'Rekap Produksi Getah', headers:['No','RPH','BKPH','Total Petak','Produksi (Kg)'],
+    row:r=>[r.no,r.rph,r.bkph,r.total,r.produksi], total:t=>['','Total','',t.total,t.produksi] },
+  quare:{ title:'Rekap Quare Sadap', headers:['No','RPH','BKPH','Quare Aktif','Quare Telat','Quare Bongkor'],
+    row:r=>[r.no,r.rph,r.bkph,r.aktif,r.telat,r.bongkor], total:t=>['','Total','',t.aktif,t.telat,t.bongkor] },
+  talang:{ title:'Progres Naik Talang & Tempurung', headers:['No','RPH','BKPH','Talang Sudah','Talang Belum','Progres (%)'],
+    row:r=>[r.no,r.rph,r.bkph,r.sudah,r.belum,Math.round((r.sudah/(r.sudah+r.belum))*1000)/10],
+    total:t=>['','Total','',t.sudah,t.belum,Math.round((t.sudah/(t.sudah+t.belum))*1000)/10] },
+  verifikasi:{ title:'Rekap Status Kelengkapan Data', headers:['No','RPH','BKPH','Total Petak','Status Kelengkapan'],
+    row:r=>[r.no,r.rph,r.bkph,r.total,r.label], total:t=>['','Total','',t.total,''] },
+};
+const BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+const REDUCE_KEYS = ['total','aktif','telat','bongkor','sudah','belum','produksi'];
+function sumRows(rows){
+  return rows.reduce((a,r)=>{ REDUCE_KEYS.forEach(k=>a[k]+= (r[k]||0)); return a; }, {total:0,aktif:0,telat:0,bongkor:0,sudah:0,belum:0,produksi:0});
+}
+
+function exportLaporanExcel(){
+  if(typeof XLSX==='undefined'){ toast('Modul Excel gagal dimuat, periksa koneksi internet lalu coba lagi'); return; }
+
+  const jenisSel = document.getElementById('laporanJenis');
+  const jenisKey = jenisSel.value;
+  const cfg = JENIS_LAPORAN[jenisKey] || JENIS_LAPORAN.produksi;
+
+  const scope = getLaporanScope();
+  const rows = scope.rows;
+  if(!rows.length){ toast('Tidak ada data pada wilayah/level ini'); return; }
+
+  const periodeVal = document.getElementById('laporanPeriode').value || '2025-05';
+  const [y,m] = periodeVal.split('-');
+  const periodeLabel = (BULAN_ID[parseInt(m,10)-1]||'')+' '+y;
+  const colCount = cfg.headers.length;
+
+  // Kelompokkan per BKPH dengan subtotal, supaya isi laporan tersusun rapi (bukan daftar RPH tercampur begitu saja)
+  const byBkph = {};
+  rows.forEach(r=>{ (byBkph[r.bkph] = byBkph[r.bkph] || []).push(r); });
+  const bkphNames = Object.keys(byBkph).sort();
+
+  const aoa = [
+    [cfg.title],
+    ['Wilayah: '+scope.level+'   |   Periode: '+periodeLabel],
+    ['Diunduh: '+new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})],
+    [],
+    cfg.headers,
+  ];
+  const groupHeaderRows = [];
+  let no = 1;
+  bkphNames.forEach(bkphName=>{
+    groupHeaderRows.push(aoa.length);
+    aoa.push([bkphName]);
+    const groupRows = byBkph[bkphName];
+    groupRows.forEach(r=> aoa.push(cfg.row({...r, no:no++})) );
+    // Baris ini bukan hanya "Total": diberi label subtotal per BKPH supaya jelas ini bukan grand total
+    const subtotalRow = cfg.total(sumRows(groupRows));
+    subtotalRow[1] = 'Subtotal '+bkphName;
+    aoa.push(subtotalRow);
+  });
+  const grandTotalRow = cfg.total(sumRows(rows));
+  grandTotalRow[1] = 'TOTAL KESELURUHAN';
+  aoa.push(grandTotalRow);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Lebar kolom menyesuaikan isi terpanjang di tiap kolom, supaya angka/teks tidak terpotong saat dibuka
+  const colWidths = new Array(colCount).fill(8);
+  aoa.forEach(row=>{
+    row.forEach((cell,i)=>{
+      if(i>=colCount) return;
+      const len = String(cell==null ? '' : cell).length;
+      colWidths[i] = Math.max(colWidths[i], Math.min(len+2, 40));
+    });
+  });
+  ws['!cols'] = colWidths.map(w=>({wch:w}));
+
+  ws['!merges'] = [
+    {s:{r:0,c:0}, e:{r:0,c:colCount-1}},
+    {s:{r:1,c:0}, e:{r:1,c:colCount-1}},
+    {s:{r:2,c:0}, e:{r:2,c:colCount-1}},
+    ...groupHeaderRows.map(r=>({s:{r,c:0}, e:{r,c:colCount-1}})),
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Laporan');
+  const filenameSafe = (cfg.title+'_'+scope.level+'_'+periodeVal).replace(/[^a-zA-Z0-9]+/g,'_');
+  XLSX.writeFile(wb, filenameSafe+'.xlsx');
+
+  laporanRiwayat.unshift({nama:cfg.title+' - '+scope.level+' - '+periodeLabel, periode:periodeLabel,
+    dibuat:new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}), format:'Excel'});
+  renderLaporanBody();
+  toast('Laporan Excel berhasil diunduh ✔');
+}
+
+/* Master data */
+const masterPetak = [
+  {kode:'458/A', rph:'Sumberjo', luas:'25,30', pohon:'1.450', status:'green'},
+  {kode:'320/C', rph:'Sleman', luas:'18,20', pohon:'1.120', status:'green'},
+  {kode:'201/B', rph:'Krecek', luas:'22,00', pohon:'1.310', status:'gold'},
+];
+const masterRph = [
+  {nama:'RPH Sumberjo', bkph:'BKPH Kediri', petak:28, krph:'Andi Wijaya'},
+  {nama:'RPH Sleman', bkph:'BKPH Kediri', petak:26, krph:'Siti Amara'},
+  {nama:'RPH Krecek', bkph:'BKPH Pare', petak:24, krph:'Dedi Kurnia'},
+];
+const masterBkph = [
+  {nama:'BKPH Kediri', rph:3, petak:56, pic:'Asper Rudi Hartono'},
+  {nama:'BKPH Pare', rph:2, petak:34, pic:'Asper Fajar Nugroho'},
+];
+const masterPengguna = [
+  {nama:'Budi Santoso', peran:'Mandor Sadap', wilayah:'RPH Sumberjo', status:'green'},
+  {nama:'Andi Wijaya', peran:'KRPH', wilayah:'RPH Sumberjo', status:'green'},
+  {nama:'Rudi Hartono', peran:'Asper / KBKPH', wilayah:'BKPH Kediri', status:'green'},
+];
+function renderMaster(){
+  document.getElementById('masterPetakBody').innerHTML = masterPetak.map(p=>`<tr><td><b>${p.kode}</b></td><td>${p.rph}</td><td>${p.luas}</td><td>${p.pohon}</td><td><span class="badge ${p.status}">${p.status==='green'?'Aktif':'Perlu Cek'}</span></td><td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;">Edit</button></td></tr>`).join('');
+  document.getElementById('masterRphBody').innerHTML = masterRph.map(r=>`<tr><td><b>${r.nama}</b></td><td>${r.bkph}</td><td>${r.petak}</td><td>${r.krph}</td><td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;">Edit</button></td></tr>`).join('');
+  document.getElementById('masterBkphBody').innerHTML = masterBkph.map(b=>`<tr><td><b>${b.nama}</b></td><td>${b.rph}</td><td>${b.petak}</td><td>${b.pic}</td><td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;">Edit</button></td></tr>`).join('');
+  document.getElementById('masterPenggunaBody').innerHTML = masterPengguna.map(u=>`<tr><td><b>${u.nama}</b></td><td>${u.peran}</td><td>${u.wilayah}</td><td><span class="badge ${u.status}">Aktif</span></td><td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;">Edit</button></td></tr>`).join('');
+}
+renderMaster();
+function addRow(type){
+  const map={petak:masterPetak, rph:masterRph, bkph:masterBkph, pengguna:masterPengguna};
+  if(type==='petak') masterPetak.unshift({kode:'BARU/'+ (masterPetak.length+1), rph:'Sumberjo', luas:'0,0', pohon:'0', status:'gold'});
+  if(type==='rph') masterRph.unshift({nama:'RPH Baru', bkph:'BKPH Kediri', petak:0, krph:'-'});
+  if(type==='bkph') masterBkph.unshift({nama:'BKPH Baru', rph:0, petak:0, pic:'-'});
+  if(type==='pengguna') masterPengguna.unshift({nama:'Pengguna Baru', peran:'Mandor Sadap', wilayah:'-', status:'gold'});
+  renderMaster();
+  toast('Data baru ditambahkan');
+}
+function switchTab(el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');
+  document.getElementById('tab-'+el.dataset.tab).style.display='block';
+}
+
+/* FAQ */
+const faqs = [
+  {q:'Bagaimana cara mengirim data yang tersimpan sebagai draft?', a:'Buka menu Draft Tersimpan, pilih data yang ingin dikirim, klik "Lanjutkan" untuk membuka kembali form, lalu klik "Simpan & Kirim".'},
+  {q:'Apa yang terjadi jika perangkat sedang offline?', a:'Data akan tersimpan secara lokal sebagai draft. Setelah koneksi tersedia, buka menu Draft Tersimpan lalu kirim data tersebut.'},
+  {q:'Bagaimana data dinyatakan lengkap?', a:'Tidak ada proses verifikasi manual — sistem otomatis memeriksa setiap data yang dikirim. Selama seluruh isian pada form (Quare, Talang & Tempurung, dan Estimasi Produksi) sudah terisi, data langsung berstatus "Lengkap".'},
+  {q:'Bagaimana cara mengunduh laporan bulanan?', a:'Buka menu Laporan, pilih jenis laporan, level wilayah, dan periode yang diinginkan, lalu klik Export Excel.'},
+];
+document.getElementById('faqList').innerHTML = faqs.map((f,i)=>`
+  <div class="faq" id="faq${i}"><div class="faq-q" onclick="toggleFaq(${i})">${f.q}<span class="chev">⌄</span></div><div class="faq-a">${f.a}</div></div>`).join('');
+function toggleFaq(i){ document.getElementById('faq'+i).classList.toggle('open'); }
+
+/* ---------- INPUT FORM LOGIC ---------- */
+function calcQuare(){
+  const a=+document.getElementById('qAktif').value||0;
+  const t=+document.getElementById('qTelat').value||0;
+  const b=+document.getElementById('qBongkor').value||0;
+  const total=a+t+b || 1;
+  document.getElementById('qTotal').textContent=fmt(a+t+b);
+  document.getElementById('pAktif').textContent=(a/total*100).toFixed(2).replace('.',',')+'%';
+  document.getElementById('pTelat').textContent=(t/total*100).toFixed(2).replace('.',',')+'%';
+  document.getElementById('pBongkor').textContent=(b/total*100).toFixed(2).replace('.',',')+'%';
+  renderTalangSliders();
+}
+function getQuareAktifCount(){ return +document.getElementById('qAktif').value||0; }
+
+/* Kelompok slider persen yang saling terhubung (total selalu 100%) */
+function normalizeGroup(group, changedKey, changedVal){
+  const keys = Object.keys(group);
+  changedVal = Math.max(0, Math.min(100, +changedVal||0));
+  const others = keys.filter(k=>k!==changedKey);
+  const remainder = 100 - changedVal;
+  const othersSum = others.reduce((s,k)=>s+group[k], 0);
+  group[changedKey] = changedVal;
+  if(othersSum <= 0){
+    others.forEach(k=>group[k] = remainder/others.length);
+  } else {
+    others.forEach(k=>{ group[k] = remainder * (group[k]/othersSum); });
+  }
+}
+
+/* --- Step 2: Progres Naik Talang & Tempurung --- */
+let talangPct = {sudah:100, belum:0};
+let talangMode = 'sudah'; // status yang sedang aktif digeser; status lain otomatis terkunci
+
+function setTalangMode(mode){
+  talangMode = mode;
+  applyTalangLock();
+}
+function applyTalangLock(){
+  const sudahSlider = document.getElementById('tSudahPct');
+  const belumSlider = document.getElementById('tBelumPct');
+  const sudahBox = document.getElementById('tSudahBox');
+  const belumBox = document.getElementById('tBelumBox');
+  if(talangMode === 'sudah'){
+    sudahSlider.disabled = false;
+    belumSlider.disabled = true;
+    sudahBox.classList.remove('locked');
+    belumBox.classList.add('locked');
+  } else {
+    sudahSlider.disabled = true;
+    belumSlider.disabled = false;
+    sudahBox.classList.add('locked');
+    belumBox.classList.remove('locked');
+  }
+}
+function setTalangPct(key, val){
+  normalizeGroup(talangPct, key, val);
+  renderTalangSliders();
+}
+function renderTalangSliders(){
+  const aktifCount = getQuareAktifCount();
+  document.getElementById('tSudahPct').value = Math.round(talangPct.sudah);
+  document.getElementById('tBelumPct').value = Math.round(talangPct.belum);
+  document.getElementById('tSudahPctLabel').textContent = Math.round(talangPct.sudah)+'%';
+  document.getElementById('tBelumPctLabel').textContent = Math.round(talangPct.belum)+'%';
+  document.getElementById('tSudahCount').textContent = fmt(Math.round(aktifCount*talangPct.sudah/100));
+  document.getElementById('tBelumCount').textContent = fmt(Math.round(aktifCount*talangPct.belum/100));
+  document.getElementById('tTotal').textContent = Math.round(talangPct.sudah)+'%';
+  applyTalangLock();
+}
+
+/* --- Step 3: Estimasi Produksi dalam Petak (input langsung dalam Kg) --- */
+function calcProduksi(){
+  const baik=+document.getElementById('prBaik').value||0;
+  const rendah=+document.getElementById('prRendah').value||0;
+  const tidak=+document.getElementById('prTidak').value||0;
+  const total = baik+rendah+tidak;
+  const denom = total||1;
+  document.getElementById('pBaik').textContent=(baik/denom*100).toFixed(2).replace('.',',')+'%';
+  document.getElementById('pRendah').textContent=(rendah/denom*100).toFixed(2).replace('.',',')+'%';
+  document.getElementById('pTidak').textContent=(tidak/denom*100).toFixed(2).replace('.',',')+'%';
+  document.getElementById('prTotalKg').textContent=fmt(total)+' Kg';
+}
+
+function saveDraft(){ toast('Data disimpan sebagai draft ✔'); }
+function submitForm(){
+  const filled = [document.getElementById('qAktif').value,document.getElementById('qTelat').value,document.getElementById('qBongkor').value,
+    document.getElementById('prBaik').value,document.getElementById('prRendah').value,document.getElementById('prTidak').value]
+    .every(v=>v!==''&&v!==null);
+  if(filled){ toast('Data berhasil dikirim & lengkap (diperiksa otomatis oleh sistem) ✔'); }
+  else { toast('Data terkirim, namun sistem mendeteksi ada isian yang belum lengkap'); }
+  setTimeout(()=>goto('draft'),900);
+}
+function resetForm(){
+  document.getElementById('qAktif').value=0; document.getElementById('qTelat').value=0; document.getElementById('qBongkor').value=0;
+  talangPct = {sudah:100, belum:0};
+  talangMode = 'sudah';
+  document.getElementById('talangModeSudah').checked = true;
+  document.getElementById('talangModeBelum').checked = false;
+  document.getElementById('prBaik').value=0; document.getElementById('prRendah').value=0; document.getElementById('prTidak').value=0;
+  calcQuare(); calcProduksi(); toast('Form dibersihkan');
+}
+
+let donutQuareInstance, donutTalangInstance, donutProduksiInstance, trendChartInstance;
+const kphTrendBase = [62450,68230,72850,81620,92130,98450];
+
+calcQuare();
+calcProduksi();
+renderStaticIcons();
+setRole('admin');
+
+/* ---------- CHARTS ---------- */
+Chart.defaults.font.family = "'Segoe UI', sans-serif";
+function donut(id, data, colors, onClickHandler){
+  return new Chart(document.getElementById(id), {
+    type:'doughnut',
+    data:{ datasets:[{data, backgroundColor:colors, borderWidth:0}]},
+    options:{cutout:'72%', plugins:{legend:{display:false},tooltip:{enabled:true}}, responsive:true, maintainAspectRatio:false,
+      onClick: onClickHandler ? (evt, elements)=>onClickHandler(evt, elements) : undefined}
+  });
+}
+donutQuareInstance = donut('donutQuare',[24583,6214,3186],['#237a45','#f0ad4e','#e5484d']);
+donutTalangInstance = donut('donutTalang',[26845,7138],['#237a45','#f0ad4e']);
+donutProduksiInstance = donut('donutProduksi',[98,54],['#237a45','#f0ad4e']);
+
+trendChartInstance = new Chart(document.getElementById('trendChart'), {
+  type:'line',
+  data:{ labels:['Des 2024','Jan 2025','Feb 2025','Mar 2025','Apr 2025','Mei 2025'],
+    datasets:[{ label:'Estimasi Produksi (Kg)', data:kphTrendBase.slice(),
+      borderColor:'#237a45', backgroundColor:'rgba(35,122,69,.12)', fill:true, tension:.35, pointRadius:4, pointBackgroundColor:'#237a45' }]},
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+    scales:{ y:{ticks:{callback:v=>(v/1000)+'K'}, grid:{color:'#eef2ef'}}, x:{grid:{display:false}} } }
+});
+updateDashboardScope(currentRole);
+
+const bkphGroupsInit = aggregateByBkph(rphData);
+bkphChartInstance = new Chart(document.getElementById('bkphChart'), {
+  type:'bar',
+  data:{ labels:bkphGroupsInit.map(g=>g.name), datasets:[{label:'Produksi (Kg)', data:bkphGroupsInit.map(g=>g.produksi), backgroundColor:'#237a45', borderRadius:6, maxBarThickness:46}]},
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:'#eef2ef'}}, x:{grid:{display:false}} } }
+});
+
+rphChartInstance = new Chart(document.getElementById('rphChart'), {
+  type:'bar',
+  data:{ labels:rphData.map(r=>r.rph),
+    datasets:[
+      { label:'Quare Aktif', data:rphData.map(r=>r.aktif), backgroundColor:'#237a45', borderRadius:6, maxBarThickness:28 },
+      { label:'Produksi (Kg)', data:rphData.map(r=>r.produksi), backgroundColor:'#2f80ed', borderRadius:6, maxBarThickness:28 }
+    ]},
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:11}}}},
+    scales:{ y:{grid:{color:'#eef2ef'}}, x:{grid:{display:false}} } }
+});
+renderRphChart(currentRole);
+renderDashboardBkph(currentRole);
+renderRekapPage(currentRole);
+renderPetaSebaran(currentRole);
+
+mandorChartInstance = new Chart(document.getElementById('mandorChart'), {
+  type:'bar',
+  data:{ labels:mandorData.map(m=>m.nama),
+    datasets:[
+      { label:'Quare Aktif', data:mandorData.map(m=>m.aktif), backgroundColor:'#237a45', borderRadius:6, maxBarThickness:22 },
+      { label:'Quare Telat', data:mandorData.map(m=>m.telat), backgroundColor:'#f0ad4e', borderRadius:6, maxBarThickness:22 },
+      { label:'Quare Bongkor', data:mandorData.map(m=>m.bongkor), backgroundColor:'#e5484d', borderRadius:6, maxBarThickness:22 }
+    ]},
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:11}}}},
+    scales:{ y:{grid:{color:'#eef2ef'}}, x:{grid:{display:false}} } }
+});
+renderMandor(currentRole);
+
+/* ============================================================
+   ADMIN PRODUKSI GETAH — Persediaan Getah (gabungan SIGAP + LAGETA)
+   Wilayah BKPH/RPH memakai data rphData yang sama supaya konsisten
+   dengan modul lain. Seluruh data di bawah ini simulasi client-side
+   untuk keperluan mockup (tidak tersambung ke server sungguhan).
+   ============================================================ */
+const PG_BKPH_LIST = [...new Set(rphData.map(r=>r.bkph))].sort();
+function pgRphOptions(bkph){ return (bkph ? rphData.filter(r=>r.bkph===bkph) : rphData).map(r=>r.rph); }
+function pgBkphOfRph(rphName){ const f = rphData.find(r=>r.rph===rphName); return f ? f.bkph : ''; }
+
+// Daftar mandor/TAD produksi getah — nama dipakai ulang dari mandorData, dipetakan ke BKPH lewat rphData.
+// Memakai SELURUH mandorData (bukan hanya sebagian) supaya semua BKPH/RPH terwakili — kalau hanya sebagian yang
+// diambil, BKPH yang tidak kebagian mandor akan selalu bernilai 0 dan pie diagramnya di "Detail Komposisi per BKPH" kosong.
+const getahMandorData = mandorData.map((m,i)=>{
+  const rphName = m.rph.replace('RPH ',''); // rphData menyimpan nama RPH tanpa prefix "RPH ", jadi harus di-strip dulu sebelum dicocokkan
+  return {
+    id:'GM'+(i+1),
+    nama:m.nama,
+    jenis: i%3===0 ? 'TAD' : 'Mandor',
+    rph:rphName,
+    bkph:pgBkphOfRph(rphName),
+  };
+});
+
+const PG_TODAY = '2025-05-20'; // "hari ini" pada skenario mock (sama dengan tanggal terbaru di modul lain)
+const BULAN_ID_PG = BULAN_ID; // reuse daftar nama bulan yang sudah ada
+
+function pgRand(seed){ const x = Math.sin(seed*9301+49297)*233280; return x - Math.floor(x); }
+function pgDateStr(y,m,d){ return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+function pgDaysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+function pgPeriodeRange(y,m,periode){ const dim = pgDaysInMonth(y,m); return periode===1 ? {start:1,end:15} : {start:16,end:dim}; }
+
+// getahEntries: { 'YYYY-MM-DD': { mandorId: {produksi, angkutan} } } — riwayat periode berjalan
+const getahEntries = {};
+(function seedGetahEntries(){
+  for(let d=1; d<=20; d++){ // 1–20 Mei 2025: Periode 1 penuh, Periode 2 baru berjalan s/d hari ini
+    const dt = pgDateStr(2025,5,d);
+    getahMandorData.forEach((mn,i)=>{
+      const chance = pgRand(d*131+i*7);
+      if(chance > 0.12){
+        const produksi = Math.round(25 + pgRand(d*17+i*3)*35);
+        const angkutan = Math.round(produksi * (0.55 + pgRand(d*29+i*11)*0.35));
+        (getahEntries[dt] = getahEntries[dt] || {})[mn.id] = {produksi, angkutan, history:[{waktu:d+' Mei 2025 (input awal)', produksi, angkutan}]};
+      }
+    });
+  }
+})();
+
+// getahBackups: arsip periode-periode sebelumnya yang sudah ditutup
+const getahBackups = [
+  {label:'Periode 2 (16–30 April 2025)', dibuat:'01 Mei 2025', produksi:284650, angkutan:261200, sisa:23450},
+  {label:'Periode 1 (1–15 April 2025)', dibuat:'16 April 2025', produksi:198300, angkutan:185900, sisa:12400},
+  {label:'Periode 2 (16–31 Maret 2025)', dibuat:'01 April 2025', produksi:301120, angkutan:279800, sisa:21320},
+];
+
+function pgPopulateFilters(){
+  ['piBkphFilter'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = '<option value="">Semua BKPH</option>' + PG_BKPH_LIST.map(b=>`<option value="${b}">${b}</option>`).join('');
+  });
+  const piT = document.getElementById('piTanggalFilter'); if(piT) piT.value = PG_TODAY;
+  const plB = document.getElementById('plBulanFilter'); if(plB) plB.value = PG_TODAY.slice(0,7);
+  onPiBkphChange();
+}
+function onPiBkphChange(){
+  const bkph = document.getElementById('piBkphFilter').value;
+  const sel = document.getElementById('piRphFilter');
+  sel.innerHTML = '<option value="">Semua RPH</option>' + pgRphOptions(bkph).map(r=>`<option value="${r}">${r}</option>`).join('');
+  renderInputProduksiTable();
+}
+function pgFilteredMandor(bkph, rph, search){
+  return getahMandorData.filter(m=>
+    (!bkph || m.bkph===bkph) && (!rph || m.rph===rph) &&
+    (!search || m.nama.toLowerCase().includes(search.toLowerCase()))
+  );
+}
+
+/* ---------- DASHBOARD: pie komposisi Produksi/Angkutan/Sisa — berjejer per tanggal, bisa digeser (swipe) ---------- */
+let pdPieCharts = []; // satu Chart instance per kartu tanggal pada baris swipe Dashboard
+let pbPieCharts = []; // satu Chart instance per kartu BKPH pada halaman Detail Komposisi per BKPH
+let pdBkphSelectedDate = null; // tanggal yang sedang ditampilkan di halaman Detail Komposisi per BKPH (hanya 1 tanggal, tidak digabung dgn tanggal lain)
+const PG_COLOR_PRODUKSI = '#2f80ed';
+const PG_COLOR_ANGKUTAN = '#e5484d';
+const PG_COLOR_SISA = '#1b6b3c';
+function pgCurrentPeriodeYMD(){
+  const [y,m,d] = PG_TODAY.split('-').map(Number);
+  const periode = d <= 15 ? 1 : 2;
+  return {y,m,periode};
+}
+// Akumulasi seluruh input harian per mandor/TAD dalam satu periode (Tgl 1-15 atau 16-akhir bulan) — dipakai untuk KPI & rekap
+function pgPeriodeMandorAgg(y,m,periode){
+  const range = pgPeriodeRange(y,m,periode);
+  const agg = {};
+  for(let d=range.start; d<=range.end; d++){
+    const dt = pgDateStr(y,m,d);
+    const day = getahEntries[dt] || {};
+    Object.keys(day).forEach(id=>{
+      const e = day[id];
+      if(!agg[id]) agg[id] = {produksi:0, angkutan:0, hariInput:0};
+      agg[id].produksi += e.produksi;
+      agg[id].angkutan += e.angkutan;
+      agg[id].hariInput += 1;
+    });
+  }
+  return {range, agg};
+}
+// Total produksi & angkutan per tanggal dalam satu periode — dipakai untuk kartu-kartu yang digeser
+function pgPeriodeDailyTotals(y,m,periode){
+  const range = pgPeriodeRange(y,m,periode);
+  const out = [];
+  for(let d=range.start; d<=range.end; d++){
+    const dt = pgDateStr(y,m,d);
+    const day = getahEntries[dt] || {};
+    let p=0,a=0;
+    Object.values(day).forEach(e=>{ p+=e.produksi; a+=e.angkutan; });
+    out.push({tanggal:dt, label:d+' '+BULAN_ID_PG[m-1], produksi:p, angkutan:a});
+  }
+  return out;
+}
+function renderProduksiDashboard(){
+  // KPI & rekap: akumulasi seluruh input dalam periode berjalan (Tgl 1-15 / 16-akhir bulan), seluruh KPH Kediri
+  const {y,m,periode} = pgCurrentPeriodeYMD();
+  const {range, agg} = pgPeriodeMandorAgg(y,m,periode);
+  const scopeMandor = getahMandorData;
+
+  let totProduksi=0, totAngkutan=0, sudahInput=0;
+  scopeMandor.forEach(m=>{ const e = agg[m.id]; if(e){ totProduksi+=e.produksi; totAngkutan+=e.angkutan; sudahInput++; } });
+  const totSisa = Math.max(totProduksi-totAngkutan, 0);
+
+  setText('pdKpiProduksi', fmt(totProduksi));
+  setText('pdKpiAngkutan', fmt(totAngkutan));
+  setText('pdKpiSisa', fmt(totSisa));
+  setText('pdKpiInput', sudahInput+'/'+scopeMandor.length);
+  const scopeLabel = 'Seluruh KPH Kediri · Periode '+periode+' (Tgl '+range.start+'–'+range.end+' '+BULAN_ID_PG[m-1]+' '+y+')';
+  setText('pdScopeLabel', scopeLabel);
+
+  // Diagram pie langsung per BKPH — akumulasi periode berjalan, seluruh KPH Kediri
+  renderPdPieRow(agg);
+
+  // Rekap per RPH — akumulasi periode berjalan, seluruh KPH Kediri
+  const rphList = pgRphOptions('');
+  const rows = rphList.map((r,i)=>{
+    const mForR = getahMandorData.filter(m=>m.rph===r);
+    let p=0,a=0,input=0;
+    mForR.forEach(m=>{ const e=agg[m.id]; if(e){ p+=e.produksi; a+=e.angkutan; input++; } });
+    return {no:i+1, rph:r, bkph:pgBkphOfRph(r), produksi:p, angkutan:a, sisa:Math.max(p-a,0), input, total:mForR.length};
+  });
+  document.getElementById('pdRekapRphBody').innerHTML = rows.map(r=>`
+    <tr><td>${r.no}</td><td><b>${r.rph}</b></td><td>${r.bkph}</td><td>${fmt(r.produksi)}</td><td>${fmt(r.angkutan)}</td><td>${fmt(r.sisa)}</td><td>${r.input}/${r.total}</td></tr>
+  `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--sub);padding:24px;">Tidak ada data</td></tr>';
+}
+// Bangun satu kartu pie (Produksi/Angkutan/Sisa) per BKPH, akumulasi periode berjalan, ditampilkan langsung tanpa geser tanggal
+function renderPdPieRow(agg){
+  pdPieCharts.forEach(c=>{ if(c) c.destroy(); });
+  pdPieCharts = [];
+  const wrap = document.getElementById('pdPieScroll');
+  if(!wrap) return;
+  const rows = PG_BKPH_LIST.map((b,i)=>{
+    const mForB = getahMandorData.filter(m=>m.bkph===b);
+    let p=0,a=0,input=0;
+    mForB.forEach(m=>{ const e=agg[m.id]; if(e){ p+=e.produksi; a+=e.angkutan; input++; } });
+    return {no:i+1, bkph:b, produksi:p, angkutan:a, sisa:Math.max(p-a,0), input, total:mForB.length};
+  });
+  rows.sort((x,y)=>y.sisa-x.sisa); // ranking: BKPH dengan Sisa paling banyak ditampilkan paling kiri
+  if(!rows.length){
+    wrap.innerHTML = '<div style="padding:20px 4px;color:var(--sub);font-size:12.5px;">Belum ada data produksi pada periode ini</div>';
+    return;
+  }
+  wrap.innerHTML = rows.map((r,i)=>`
+    <div class="bkph-card" data-bkph="${r.bkph}">
+      <div class="bkph-name">${r.bkph}</div>
+      <div class="donut-wrap"><canvas id="pdPieChart_${i}"></canvas>
+        <div class="donut-center"><div class="num">${fmt(r.sisa)}</div><div class="lbl">Kg Sisa</div></div>
+      </div>
+      <div class="bkph-ket">
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_PRODUKSI};"></span><span class="kl">Produksi</span><span class="kv" style="color:${PG_COLOR_PRODUKSI};">${fmt(r.produksi)} Kg</span></div>
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_ANGKUTAN};"></span><span class="kl">Angkutan</span><span class="kv" style="color:${PG_COLOR_ANGKUTAN};">${fmt(r.angkutan)} Kg</span></div>
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_SISA};"></span><span class="kl">Sisa</span><span class="kv" style="color:${PG_COLOR_SISA};">${fmt(r.sisa)} Kg</span></div>
+      </div>
+      <div class="bkph-input">Mandor/TAD input: ${r.input}/${r.total}</div>
+    </div>
+  `).join('');
+  rows.forEach((r,i)=>{
+    pdPieCharts.push(donut('pdPieChart_'+i, [r.produksi, r.angkutan, r.sisa], [PG_COLOR_PRODUKSI, PG_COLOR_ANGKUTAN, PG_COLOR_SISA]));
+  });
+}
+// ---------- DASHBOARD ADMIN KPH: pie komposisi Produksi/Angkutan/Sisa, sumber data sama dgn Admin Produksi Getah (getahEntries) ----------
+let kphPdPieCharts = []; // satu Chart instance per kartu BKPH pada baris swipe Dashboard Admin KPH
+function renderKphGetahPieRow(agg){
+  kphPdPieCharts.forEach(c=>{ if(c) c.destroy(); });
+  kphPdPieCharts = [];
+  const wrap = document.getElementById('kphPdPieScroll');
+  if(!wrap) return;
+  const rows = PG_BKPH_LIST.map((b,i)=>{
+    const mForB = getahMandorData.filter(m=>m.bkph===b);
+    let p=0,a=0,input=0;
+    mForB.forEach(m=>{ const e=agg[m.id]; if(e){ p+=e.produksi; a+=e.angkutan; input++; } });
+    return {no:i+1, bkph:b, produksi:p, angkutan:a, sisa:Math.max(p-a,0), input, total:mForB.length};
+  });
+  rows.sort((x,y)=>y.sisa-x.sisa); // ranking: BKPH dengan Sisa paling banyak ditampilkan paling kiri
+  if(!rows.length){
+    wrap.innerHTML = '<div style="padding:20px 4px;color:var(--sub);font-size:12.5px;">Belum ada data produksi pada periode ini</div>';
+    return;
+  }
+  wrap.innerHTML = rows.map((r,i)=>`
+    <div class="bkph-card" data-bkph="${r.bkph}">
+      <div class="bkph-name">${r.bkph}</div>
+      <div class="donut-wrap"><canvas id="kphPdPieChart_${i}"></canvas>
+        <div class="donut-center"><div class="num">${fmt(r.sisa)}</div><div class="lbl">Kg Sisa</div></div>
+      </div>
+      <div class="bkph-ket">
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_PRODUKSI};"></span><span class="kl">Produksi</span><span class="kv" style="color:${PG_COLOR_PRODUKSI};">${fmt(r.produksi)} Kg</span></div>
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_ANGKUTAN};"></span><span class="kl">Angkutan</span><span class="kv" style="color:${PG_COLOR_ANGKUTAN};">${fmt(r.angkutan)} Kg</span></div>
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_SISA};"></span><span class="kl">Sisa</span><span class="kv" style="color:${PG_COLOR_SISA};">${fmt(r.sisa)} Kg</span></div>
+      </div>
+      <div class="bkph-input">Mandor/TAD input: ${r.input}/${r.total}</div>
+    </div>
+  `).join('');
+  rows.forEach((r,i)=>{
+    kphPdPieCharts.push(donut('kphPdPieChart_'+i, [r.produksi, r.angkutan, r.sisa], [PG_COLOR_PRODUKSI, PG_COLOR_ANGKUTAN, PG_COLOR_SISA]));
+  });
+}
+// Dipanggil setiap kali data produksi berubah (input baru/tutup periode) agar diagram di Dashboard Admin KPH selalu sinkron dgn input Admin Produksi Getah
+function renderKphGetahDashboard(){
+  const {y,m,periode} = pgCurrentPeriodeYMD();
+  const range = pgPeriodeRange(y,m,periode);
+  setText('kphGetahScopeLabel', 'Data dari input Admin Produksi Getah · Periode '+periode+' (Tgl '+range.start+'–'+range.end+' '+BULAN_ID_PG[m-1]+' '+y+') · Seluruh KPH Kediri');
+  const {agg} = pgPeriodeMandorAgg(y,m,periode);
+  renderKphGetahPieRow(agg);
+}
+// Klik salah satu pie di Dashboard -> buka halaman Detail Komposisi per BKPH, HANYA untuk tanggal yang diklik (tanggal lain tidak ditampilkan)
+function pgOpenBkphDetail(tanggal){
+  pdBkphSelectedDate = tanggal;
+  goto('produksi-bkph'); // goto() akan otomatis memanggil renderPdBkphDetail() setelah halaman terlihat
+}
+
+/* ---------- HALAMAN: Detail Komposisi per BKPH — hanya 1 tanggal ditampilkan (dipilih dari klik pie di Dashboard), berupa pie per BKPH + keterangan ---------- */
+function renderPdBkphDetail(){
+  const {y,m,periode} = pgCurrentPeriodeYMD();
+  const dateOptions = pgPeriodeDailyTotals(y,m,periode).filter(d=>d.produksi>0 || d.angkutan>0);
+  const wrap = document.getElementById('pbScroll');
+  const label = document.getElementById('pbTanggalLabel');
+  pbPieCharts.forEach(c=>{ if(c) c.destroy(); });
+  pbPieCharts = [];
+  if(!wrap) return;
+
+  if(!dateOptions.length){
+    if(label) label.textContent = '';
+    wrap.innerHTML = '<div style="padding:20px 4px;color:var(--sub);font-size:12.5px;">Belum ada data produksi pada periode ini</div>';
+    return;
+  }
+
+  // Tentukan tanggal aktif: pakai yang sudah dipilih (dari klik pie) jika masih tersedia, kalau tidak pakai tanggal terbaru
+  if(!pdBkphSelectedDate || !dateOptions.some(d=>d.tanggal===pdBkphSelectedDate)){
+    pdBkphSelectedDate = dateOptions[dateOptions.length-1].tanggal;
+  }
+  const activeDate = pdBkphSelectedDate;
+  const activeOpt = dateOptions.find(d=>d.tanggal===activeDate);
+  if(label) label.textContent = activeOpt ? activeOpt.label : '';
+
+  const dayEntries = getahEntries[activeDate] || {};
+  const rows = PG_BKPH_LIST.map((b,i)=>{
+    const mForB = getahMandorData.filter(m=>m.bkph===b);
+    let p=0,a=0,input=0;
+    mForB.forEach(m=>{ const e=dayEntries[m.id]; if(e){ p+=e.produksi; a+=e.angkutan; input++; } });
+    return {no:i+1, bkph:b, produksi:p, angkutan:a, sisa:Math.max(p-a,0), input, total:mForB.length};
+  });
+
+  wrap.innerHTML = rows.map((r,i)=>`
+    <div class="bkph-card" data-bkph="${r.bkph}">
+      <div class="bkph-name">${r.bkph}</div>
+      <div class="donut-wrap"><canvas id="pbPieChart_${i}"></canvas>
+        <div class="donut-center"><div class="num">${fmt(r.produksi)}</div><div class="lbl">Kg Produksi</div></div>
+      </div>
+      <div class="bkph-ket">
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_PRODUKSI};"></span><span class="kl">Produksi</span><span class="kv" style="color:${PG_COLOR_PRODUKSI};">${fmt(r.produksi)} Kg</span></div>
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_ANGKUTAN};"></span><span class="kl">Angkutan</span><span class="kv" style="color:${PG_COLOR_ANGKUTAN};">${fmt(r.angkutan)} Kg</span></div>
+        <div class="kr"><span class="dot" style="background:${PG_COLOR_SISA};"></span><span class="kl">Sisa</span><span class="kv" style="color:${PG_COLOR_SISA};">${fmt(r.sisa)} Kg</span></div>
+      </div>
+      <div class="bkph-input">Mandor/TAD input: ${r.input}/${r.total}</div>
+    </div>
+  `).join('');
+
+  rows.forEach((r,i)=>{
+    pbPieCharts.push(donut('pbPieChart_'+i, [r.produksi, r.angkutan, r.sisa], [PG_COLOR_PRODUKSI, PG_COLOR_ANGKUTAN, PG_COLOR_SISA]));
+  });
+}
+
+/* ---------- INPUT PRODUKSI: dikelompokkan per RPH + daftar mandor, dengan riwayat & batas 3x edit ---------- */
+const PG_MAX_EDIT = 3;
+function pgHistOf(tanggal, id){
+  const e = (getahEntries[tanggal]||{})[id];
+  return e && e.history ? e.history : [];
+}
+function renderInputProduksiTable(){
+  const bkph = document.getElementById('piBkphFilter')?.value || '';
+  const rph = document.getElementById('piRphFilter')?.value || '';
+  const search = document.getElementById('piSearch')?.value || '';
+  const tanggal = document.getElementById('piTanggalFilter')?.value || PG_TODAY;
+  const rows = pgFilteredMandor(bkph, rph, search);
+  const dayEntries = getahEntries[tanggal] || {};
+
+  const rowsHtml = rows.map(m=>{
+    const e = dayEntries[m.id];
+    const p = e ? e.produksi : '';
+    const a = e ? e.angkutan : '';
+    const sisa = e ? Math.max(e.produksi-e.angkutan,0) : 0;
+    const hist = pgHistOf(tanggal, m.id);
+    const locked = hist.length >= PG_MAX_EDIT;
+    const histHtml = hist.length
+      ? hist.map((h,i)=>`<div style="padding:3px 0;">Edit ke-${i+1} &middot; ${h.waktu} &middot; Produksi ${fmt(h.produksi)} Kg, Angkutan ${fmt(h.angkutan)} Kg</div>`).join('')
+      : '<div style="color:var(--sub);">Belum ada riwayat input</div>';
+    return `<tr>
+      <td><b>${m.nama}</b> <span class="badge gray" style="margin-left:4px;">${m.jenis}</span></td>
+      <td>${m.rph}</td>
+      <td>${m.bkph}</td>
+      <td><input type="number" min="0" step="0.01" value="${p}" id="pg_p_${m.id}" ${locked?'disabled':''} oninput="pgHitungSisa('${m.id}')" style="width:90px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;"></td>
+      <td><input type="number" min="0" step="0.01" value="${a}" id="pg_a_${m.id}" ${locked?'disabled':''} oninput="pgHitungSisa('${m.id}')" style="width:90px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;"></td>
+      <td><span id="pg_s_${m.id}">${fmt(sisa)}</span> Kg</td>
+      <td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="pgToggleRiwayat('${m.id}')">
+        <span class="badge ${locked?'red':'gray'}" style="margin-right:0;">${hist.length}/${PG_MAX_EDIT}</span> Riwayat</button></td>
+    </tr>
+    <tr id="pg_hist_${m.id}" style="display:none;"><td colspan="6" style="background:var(--green-50);font-size:11.5px;color:var(--ink);padding:10px 14px;">${histHtml}${locked?'<div style="margin-top:4px;font-weight:700;color:var(--red);">Batas maksimal 3x edit tercapai — input dikunci.</div>':''}</td></tr>`;
+  }).join('');
+
+  document.getElementById('piBody').innerHTML = rows.length ? `
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Mandor / TAD</th><th>RPH</th><th>BKPH</th><th>Produksi (Kg)</th><th>Angkutan (Kg)</th><th>Sisa (Kg)</th><th>Riwayat Input</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    </div>` : '<div style="text-align:center;color:var(--sub);padding:24px;">Tidak ada mandor/TAD untuk filter ini</div>';
+}
+function pgHitungSisa(id){
+  const p = parseFloat(document.getElementById('pg_p_'+id).value)||0;
+  const a = parseFloat(document.getElementById('pg_a_'+id).value)||0;
+  setText('pg_s_'+id, fmt(Math.max(p-a,0)));
+}
+function pgToggleRiwayat(id){
+  const row = document.getElementById('pg_hist_'+id);
+  if(!row) return;
+  row.style.display = row.style.display==='none' ? '' : 'none';
+}
+function pgNowStr(){
+  return new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+// Simpan satu entri produksi/angkutan; kembalikan false jika sudah mencapai batas 3x edit
+function pgSimpanSatuEntry(tanggal, id, p, a){
+  const day = getahEntries[tanggal] = getahEntries[tanggal] || {};
+  const existing = day[id];
+  const history = existing && existing.history ? existing.history.slice() : [];
+  if(history.length >= PG_MAX_EDIT) return false;
+  history.push({waktu: pgNowStr(), produksi:p, angkutan:a});
+  day[id] = {produksi:p, angkutan:a, history};
+  return true;
+}
+function pgSimpanSemua(){
+  const bkph = document.getElementById('piBkphFilter')?.value || '';
+  const rph = document.getElementById('piRphFilter')?.value || '';
+  const search = document.getElementById('piSearch')?.value || '';
+  const tanggal = document.getElementById('piTanggalFilter')?.value || PG_TODAY;
+  const rows = pgFilteredMandor(bkph, rph, search);
+  let savedCount=0, lockedCount=0;
+  rows.forEach(m=>{
+    const pEl = document.getElementById('pg_p_'+m.id), aEl = document.getElementById('pg_a_'+m.id);
+    if(!pEl || !aEl || pEl.disabled){ if(pEl && pEl.disabled) lockedCount++; return; }
+    const p = parseFloat(pEl.value)||0, a = parseFloat(aEl.value)||0;
+    if(p>0 || a>0){
+      const ok = pgSimpanSatuEntry(tanggal, m.id, p, a);
+      if(ok) savedCount++; else lockedCount++;
+    }
+  });
+  renderInputProduksiTable();
+  renderProduksiDashboard();
+  renderPdBkphDetail();
+  renderLaporanProduksi();
+  renderKphGetahDashboard();
+  let msg = savedCount+' data mandor/TAD berhasil disimpan ✔';
+  if(lockedCount>0) msg += ' ('+lockedCount+' entri sudah 3x diedit, dilewati)';
+  toast(msg);
+}
+
+/* ---------- LAPORAN: rekap 2 periode/bulan + arsip/backup ---------- */
+let plActivePeriode = 2; // periode berjalan sesuai PG_TODAY (20 Mei -> Periode 2)
+function pgSetPeriodeView(p){
+  plActivePeriode = p;
+  document.getElementById('plTabP1').classList.toggle('active', p===1);
+  document.getElementById('plTabP2').classList.toggle('active', p===2);
+  renderLaporanProduksi();
+}
+function pgSumPeriode(y,m,periode){
+  const range = pgPeriodeRange(y,m,periode);
+  const dailyRows = [];
+  let totProduksi=0, totAngkutan=0;
+  for(let d=range.start; d<=range.end; d++){
+    const dt = pgDateStr(y,m,d);
+    const day = getahEntries[dt] || {};
+    let p=0,a=0,input=0;
+    Object.values(day).forEach(e=>{ p+=e.produksi; a+=e.angkutan; input++; });
+    totProduksi+=p; totAngkutan+=a;
+    dailyRows.push({tanggal:dt, tgl:d+' '+BULAN_ID_PG[m-1]+' '+y, input, p, a, sisa:Math.max(p-a,0)});
+  }
+  return { range, dailyRows, produksi:totProduksi, angkutan:totAngkutan, sisa:Math.max(totProduksi-totAngkutan,0) };
+}
+function renderLaporanProduksi(){
+  const bulanVal = document.getElementById('plBulanFilter')?.value || PG_TODAY.slice(0,7);
+  const [y,m] = bulanVal.split('-').map(Number);
+  const p1 = pgSumPeriode(y,m,1), p2 = pgSumPeriode(y,m,2);
+  const todayInMonth = PG_TODAY.slice(0,7)===bulanVal;
+
+  [{n:1,data:p1,cardId:'plPeriode1Card'},{n:2,data:p2,cardId:'plPeriode2Card'}].forEach(({n,data,cardId})=>{
+    const range = data.range;
+    const isBerjalan = todayInMonth && (n===plCurrentPeriodeOf(bulanVal));
+    const statusBadge = isBerjalan ? '<span class="badge blue">Berjalan</span>' : '<span class="badge green">Selesai</span>';
+    document.getElementById(cardId).innerHTML = `
+      <div class="section-head" style="margin-bottom:8px;">
+        <h3 style="font-size:13.5px;">Periode ${n} (Tgl ${range.start}–${range.end})</h3>${statusBadge}
+      </div>
+      <div class="kv"><span class="k">Total Produksi</span><span class="v">${fmt(data.produksi)} Kg</span></div>
+      <div class="kv"><span class="k">Total Angkutan</span><span class="v">${fmt(data.angkutan)} Kg</span></div>
+      <div class="kv"><span class="k">Sisa Persediaan</span><span class="v">${fmt(data.sisa)} Kg</span></div>
+      <div style="margin-top:10px;">
+        <button class="btn btn-outline" style="padding:7px 12px;font-size:11.5px;" onclick="pgTutupPeriode(${n})">Tutup &amp; Arsipkan Periode Ini</button>
+      </div>`;
+  });
+
+  setText('plRiwayatTitle', 'Riwayat Input Harian — Periode '+plActivePeriode+' (Tgl '+(plActivePeriode===1?p1.range.start+'–'+p1.range.end:p2.range.start+'–'+p2.range.end)+')');
+  const activeData = plActivePeriode===1 ? p1 : p2;
+  document.getElementById('plRiwayatBody').innerHTML = activeData.dailyRows.map(r=>`
+    <tr><td>${r.tgl}</td><td>${r.input}</td><td>${fmt(r.p)}</td><td>${fmt(r.a)}</td><td>${fmt(r.sisa)}</td></tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--sub);padding:24px;">Belum ada data</td></tr>';
+
+  document.getElementById('plArsipBody').innerHTML = getahBackups.map((b,i)=>`
+    <tr><td><b>${b.label}</b></td><td>${b.dibuat}</td><td>${fmt(b.produksi)}</td><td>${fmt(b.angkutan)}</td><td>${fmt(b.sisa)}</td>
+    <td><button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="pgUnduhArsip(${i})">Unduh</button>
+    <button class="btn btn-danger-outline" style="padding:5px 10px;font-size:11px;margin-left:6px;" onclick="pgHapusArsip(${i})">Hapus</button></td></tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--sub);padding:24px;">Belum ada arsip</td></tr>';
+}
+function plCurrentPeriodeOf(bulanVal){
+  if(PG_TODAY.slice(0,7)!==bulanVal) return 0;
+  return parseInt(PG_TODAY.slice(8,10),10) <= 15 ? 1 : 2;
+}
+function pgTutupPeriode(periode){
+  const bulanVal = document.getElementById('plBulanFilter')?.value || PG_TODAY.slice(0,7);
+  const [y,m] = bulanVal.split('-').map(Number);
+  const data = pgSumPeriode(y,m,periode);
+  if(!confirm('Tutup & arsipkan Periode '+periode+' (Tgl '+data.range.start+'–'+data.range.end+')? Riwayat periode ini akan dipindahkan ke arsip dan dinolkan.')) return;
+
+  getahBackups.unshift({
+    label:'Periode '+periode+' ('+data.range.start+'–'+data.range.end+' '+BULAN_ID_PG[m-1]+' '+y+')',
+    dibuat:new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}),
+    produksi:data.produksi, angkutan:data.angkutan, sisa:data.sisa
+  });
+  for(let d=data.range.start; d<=data.range.end; d++) delete getahEntries[pgDateStr(y,m,d)];
+
+  renderLaporanProduksi();
+  renderProduksiDashboard();
+  renderPdBkphDetail();
+  renderInputProduksiTable();
+  renderKphGetahDashboard();
+  toast('Periode '+periode+' berhasil diarsipkan & riwayat dinolkan ✔');
+}
+function pgHapusArsip(i){
+  if(!confirm('Hapus arsip "'+getahBackups[i].label+'"? Tindakan ini tidak bisa dibatalkan.')) return;
+  getahBackups.splice(i,1);
+  renderLaporanProduksi();
+  toast('Arsip dihapus');
+}
+function pgUnduhArsip(i){
+  if(typeof XLSX==='undefined'){ toast('Modul Excel gagal dimuat, periksa koneksi internet lalu coba lagi'); return; }
+  const b = getahBackups[i];
+  const aoa = [
+    ['Arsip Produksi Getah — '+b.label],
+    ['Diarsipkan: '+b.dibuat],
+    [],
+    ['Total Produksi (Kg)', 'Total Angkutan (Kg)', 'Sisa Persediaan (Kg)'],
+    [b.produksi, b.angkutan, b.sisa],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Arsip');
+  XLSX.writeFile(wb, ('Arsip_'+b.label).replace(/[^a-zA-Z0-9]+/g,'_')+'.xlsx');
+  toast('Arsip berhasil diunduh ✔');
+}
+function exportProduksiExcel(){
+  if(typeof XLSX==='undefined'){ toast('Modul Excel gagal dimuat, periksa koneksi internet lalu coba lagi'); return; }
+  const bulanVal = document.getElementById('plBulanFilter')?.value || PG_TODAY.slice(0,7);
+  const [y,m] = bulanVal.split('-').map(Number);
+  const activeData = plActivePeriode===1 ? pgSumPeriode(y,m,1) : pgSumPeriode(y,m,2);
+  const aoa = [
+    ['Laporan Produksi Getah — Periode '+plActivePeriode+' ('+BULAN_ID_PG[m-1]+' '+y+')'],
+    ['Rentang Tanggal: '+activeData.range.start+'–'+activeData.range.end],
+    [],
+    ['Tanggal','Jumlah Mandor/TAD Input','Produksi (Kg)','Angkutan (Kg)','Sisa (Kg)'],
+    ...activeData.dailyRows.map(r=>[r.tgl, r.input, r.p, r.a, r.sisa]),
+    ['','TOTAL', activeData.produksi, activeData.angkutan, activeData.sisa],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Laporan Produksi');
+  XLSX.writeFile(wb, ('Laporan_Produksi_Getah_Periode'+plActivePeriode+'_'+bulanVal)+'.xlsx');
+  toast('Laporan Excel berhasil diunduh ✔');
+}
+
+/* ---------- Inisialisasi data awal modul Produksi Getah ---------- */
+pgPopulateFilters();
+renderProduksiDashboard();
+renderInputProduksiTable();
+renderLaporanProduksi();
+renderPdBkphDetail();
+renderKphGetahDashboard();
+</script>
+</body>
+</html>
